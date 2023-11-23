@@ -2,16 +2,28 @@
 
 This repo implements a simplified FAT filesystem, using Linux FUSE (libfuse) as an interface.
 
-## Compiling, Running and Testing
+## Building and running filesystem
 
-To compile, simply type(make sure that u have dir Test2):
+Build:
+```
+make
+```
 
+Clean:
 ```
-make start
+make clean
 ```
-If you want to start at the begining(delete all your files)
+
+Mount filesystem to mount_test
 ```
-make all_at_once
+make run
 ```
+
+Unmount:
+```
+make unmount
+```
+
+
 Date and time are supported.
 
