@@ -20,7 +20,6 @@ unmount:
 	fusermount -u mount_test
 
 clean:
-	make unmount
 	rm artifacts/*
 	rmdir artifacts
 
