@@ -78,7 +78,6 @@ int accept_passive_connection(int passive_socket) {
         return -1;
     }
 
-    // Print information about the connected client (optional)
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
     printf("Accepted connection from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
@@ -342,7 +341,7 @@ char* get_ls(){
     char buffer[4096];
 
     //pipe
-    ls_output = popen("ls", "-l");
+    ls_output = popen("ls -l", "r");
 
     size_t bytesRead = fread(buffer, 1, sizeof(buffer), ls_output);
 
