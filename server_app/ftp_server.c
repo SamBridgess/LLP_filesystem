@@ -8,12 +8,12 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define PORT 22
+#define PORT 21
 #define BUFFER_SIZE 1024
 
 void handle_ftp_commands();
 char* get_ls();
-void send_response(const char *response);
+void send_response(int socket, const char *response);
 
 int create_directory(const char *path);
 int remove_directory(const char *path);
@@ -140,7 +140,7 @@ void handle_ftp_commands() {
     char username[100];
     char password[100];
 
-    send_response("220 Welcome to FTP server\r\n");
+    send_response(client_socket, "220 Welcome to FTP server\r\n");
 
     int data_socket = -1;
 
@@ -165,13 +165,13 @@ void handle_ftp_commands() {
             if (data_socket != -1) {
                 char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "229 Entering Extended Passive Mode (|||%d|).\r\n", data_port);
-                send(client_socket, response, strlen(response), 0);
+                send_response(client_socket, response);
 
                 //close(data_socket);
             } else {
                 char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "425 Can't open data connection.\r\n");
-                send(client_socket, response, strlen(response), 0);
+                send_response(client_socket, response);
             }
 
             continue;
@@ -182,38 +182,37 @@ void handle_ftp_commands() {
             if (accepted_connection_socket != -1) {
                 char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "150 Opening data connection for directory listing.\r\n");
-                send(client_socket, response, strlen(response), 0);
+                send_response(client_socket, response);
 
                 char listing[BUFFER_SIZE];
                 char* ls_result = get_ls();
 
                 snprintf(listing, sizeof(response), "%s\r\n", ls_result);
-                send(accepted_connection_socket, listing, strlen(listing), 0);
+                send_response(accepted_connection_socket, listing);
 
                 free(ls_result);
 
                 snprintf(response, sizeof(response), "226 Directory listing sent.\r\n");
-                send(client_socket, response, strlen(response), 0);
-
+                send_response(client_socket, response);
                 //close data connection
                 close(accepted_connection_socket);
                 close(data_socket);
             } else {
                 char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "425 Can't open data connection.\r\n");
-                send(client_socket, response, strlen(response), 0);
+                send_response(client_socket, response);
             }
 
             continue;
         }
         if (strncmp(buffer, "USER", 4) == 0) {
             sscanf(buffer, "USER %s", username);
-            send_response("331 User name okay, need password\n");
+            send_response(client_socket,"331 User name okay, need password\n");
             continue;
         }
         if (strncmp(buffer, "PASS", 4) == 0) {
             sscanf(buffer, "PASS %s", password);
-            send_response("230 User logged in\n");
+            send_response(client_socket,"230 User logged in\n");
             continue;
         }
         if (strncmp(buffer, "RMD", 3) == 0) {
@@ -226,12 +225,12 @@ void handle_ftp_commands() {
                 strcat(dir_path, dir_name);
 
                 if (remove_directory(dir_path) == 0) {
-                    send_response("250 Directory deleted\r\n");
+                    send_response(client_socket,"250 Directory deleted\r\n");
                 } else {
-                    send_response("550 Failed to delete directory\r\n");
+                    send_response(client_socket,"550 Failed to delete directory\r\n");
                 }
             } else {
-                send_response("550 Failed to delete directory\r\n");
+                send_response(client_socket,"550 Failed to delete directory\r\n");
             }
             continue;
         }
@@ -245,12 +244,12 @@ void handle_ftp_commands() {
                 strcat(new_dir_path, new_dir);
 
                 if (change_directory(current_directory, new_dir_path) == 0) {
-                    send_response("250 Directory changed\r\n");
+                    send_response(client_socket,"250 Directory changed\r\n");
                 } else {
-                    send_response("550 Failed to change directory\r\n");
+                    send_response(client_socket,"550 Failed to change directory\r\n");
                 }
             } else {
-                send_response("550 Failed to change directory\r\n");
+                send_response(client_socket,"550 Failed to change directory\r\n");
             }
             continue;
         }
@@ -264,19 +263,19 @@ void handle_ftp_commands() {
                 strcat(new_dir_path, dir_name);
 
                 if (create_directory(new_dir_path) == 0) {
-                    send_response("257 Directory created\r\n");
+                    send_response(client_socket,"257 Directory created\r\n");
                 } else {
-                    send_response("550 Failed to create directory\r\n");
+                    send_response(client_socket, "550 Failed to create directory\r\n");
                 }
             } else {
-                send_response("550 Failed to create directory\r\n");
+                send_response(client_socket,"550 Failed to create directory\r\n");
             }
             continue;
         }
         if (strncmp(buffer, "PWD", 3) == 0) {
             char response[BUFFER_SIZE];
             snprintf(response, sizeof(response), "257 \"%s\" is the current directory\r\n", current_directory);
-            send_response(response);
+            send_response(client_socket, response);
             continue;
         }
         if (strncmp(buffer, "EPRT", 4) == 0) {
@@ -313,16 +312,16 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "QUIT", 4) == 0) {
-            send_response("221 Goodbye!\r\n");
+            send_response(client_socket, "221 Goodbye!\r\n");
             break;
         } else {
-            send_response("500 Unknown command\r\n");
+            send_response(client_socket,"500 Unknown command\r\n");
         }
     }
 }
 
-void send_response(const char *response) {
-    send(client_socket, response,  strlen(response), 0);
+void send_response(int socket, const char *response) {
+    send(socket, response,  strlen(response), 0);
 }
 int create_directory(const char *path) {
     return mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
