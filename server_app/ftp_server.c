@@ -17,32 +17,6 @@
 
 void handle_ftp_commands();
 
-char* get_ls(){
-    FILE *ls_output;
-    char buffer[4096] = {0};
-
-    //ls -l | sed '1d'
-    //pipe
-    ls_output = popen("ls -go | sed '1d'", "r");
-
-    size_t bytesRead = fread(buffer, 1, sizeof(buffer), ls_output);
-
-    buffer[bytesRead] = '\0';
-
-   // for(int i = 0; i < strlen(buffer); i++)
-   //     if(buffer[i] == '\t') buffer[i] = ' ';
-    char* result = strdup(buffer);
-    printf("%s", result);
-
-
-    char b[4095];
-    snprintf(b, sizeof(b), "-rw------- 1 peter 848 2023-12-20 11:22 00README.txt\r\n");
-    //    snprintf(b, sizeof(b), "-rw-------  1 peter         848 дек 14 11:22 00README.txt\r\n");
-    char* r = strdup(b);
-
-    return r;
-    //return result;
-}
 char* get_file_line(const char *filename, const struct stat *file_stat) {
     char line[256] = {0};
 
@@ -114,10 +88,8 @@ int create_directory(const char *path) {
 int remove_directory(const char *path) {
     return rmdir(path);
 }
-int change_directory(char *new_path, const char *current_path) {
-    if (chdir(current_path) == 0) {
-        if (getcwd(new_path, PATH_MAX) != NULL) return 0;
-    }
+int change_directory(char *new_path){
+    if(chdir(new_path) == 0) return 0;
     return -1;
 }
 
@@ -241,6 +213,7 @@ void send_file(int data_socket, const char* file_path) {
 
     fclose(file);
 }
+
 struct sockaddr_in server_addr, client_addr;
 int server_socket, client_socket;
 
@@ -319,7 +292,7 @@ void handle_ftp_commands() {
 
         //ЗАТЫЧКА ДЖОКЕРА(filezilla moment)
         if (strncmp(buffer, "PORT", 4) == 0) {
-            send_response(client_socket, "502 no active please =(.\r\n");
+            send_response(client_socket, "502 This server does not support active mode. Consider using passive mode instead.\r\n");
             continue;
         }
 
@@ -464,12 +437,34 @@ void handle_ftp_commands() {
             send_response(client_socket,"230 User logged in\n");
             continue;
         }
+        if (strncmp(buffer, "CWD", 3) == 0) {
+            char new_dir[100] = {0};
+            sscanf(buffer, "CWD %s", new_dir);
+            if(change_directory(new_dir) == 0) {
+                send_response(client_socket,"250 Directory changed\r\n");
+            } else {
+                send_response(client_socket,"550 Failed to change directory\r\n");
+            }
+
+            continue;
+        }
+        if (strncmp(buffer, "CDUP", 4) == 0) {
+            char new_dir[100] = "..";
+            if(change_directory(new_dir) == 0) {
+                send_response(client_socket,"250 Directory changed\r\n");
+            } else {
+                send_response(client_socket,"550 Failed to change directory\r\n");
+            }
+
+            continue;
+        }
         if (strncmp(buffer, "RMD", 3) == 0) {
             char dir_name[100] = {0};
             sscanf(buffer, "RMD %s", dir_name);
 
             char dir_path[PATH_MAX] = {0};
-            if (change_directory(dir_path, current_directory) == 0) {
+            if (change_directory(current_directory) == 0) {
+                strcat(dir_path, current_directory);
                 strcat(dir_path, "/");
                 strcat(dir_path, dir_name);
 
@@ -483,31 +478,13 @@ void handle_ftp_commands() {
             }
             continue;
         }
-        if (strncmp(buffer, "CWD", 3) == 0) {
-            char new_dir[100] = {0};
-            sscanf(buffer, "CWD %s", new_dir);
-
-            char new_dir_path[PATH_MAX] = {0};
-            if (change_directory(new_dir_path, current_directory) == 0) {
-                strcat(new_dir_path, "/");
-                strcat(new_dir_path, new_dir);
-
-                if (change_directory(current_directory, new_dir_path) == 0) {
-                    send_response(client_socket,"250 Directory changed\r\n");
-                } else {
-                    send_response(client_socket,"550 Failed to change directory\r\n");
-                }
-            } else {
-                send_response(client_socket,"550 Failed to change directory\r\n");
-            }
-            continue;
-        }
         if (strncmp(buffer, "MKD", 3) == 0) {
             char dir_name[100] = {0};
             sscanf(buffer, "MKD %s", dir_name);
 
             char new_dir_path[PATH_MAX] = {0};
-            if (change_directory(new_dir_path, current_directory) == 0) {
+            if (change_directory(current_directory) == 0) {
+                strcat(new_dir_path, current_directory);
                 strcat(new_dir_path, "/");
                 strcat(new_dir_path, dir_name);
 
