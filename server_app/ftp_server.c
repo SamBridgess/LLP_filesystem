@@ -9,13 +9,25 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <time.h>
+#include <signal.h>
 
 
 #define PORT 21
 #define BUFFER_SIZE 1024
 #define LIST_BUFFER_SIZE 8192
 
+struct sockaddr_in server_addr, client_addr;
+int server_socket, client_socket;
+
+
 void handle_ftp_commands();
+
+void signal_callback_handler(int signum) {
+    printf("%s", "Terminating server...\n");
+    close(server_socket);
+    close(client_socket);
+    exit(signum);
+}
 
 char* get_file_line(const char *filename, const struct stat *file_stat) {
     char line[256] = {0};
@@ -214,10 +226,9 @@ void send_file(int data_socket, const char* file_path) {
     fclose(file);
 }
 
-struct sockaddr_in server_addr, client_addr;
-int server_socket, client_socket;
-
 int main() {
+    signal(SIGINT, signal_callback_handler);
+
     socklen_t addr_size;
 
     //create socket
@@ -230,7 +241,6 @@ int main() {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    //server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     //bind socket
     if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
@@ -257,7 +267,6 @@ int main() {
 
         printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
 
-        //handle FTP commands
         handle_ftp_commands();
 
         close(client_socket);
@@ -277,25 +286,27 @@ void handle_ftp_commands() {
     int data_socket = -1;
 
     while (1) {
-        //receive command from the client
         memset(buffer, 0, sizeof(buffer));
         if (recv(client_socket, buffer, sizeof(buffer), 0) == -1) {
             perror("Error receiving command");
             break;
         }
+        if(strlen(buffer) == 0) {
+            printf("Connection lost with: %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+            break;
+        }
+
+
         char current_directory[BUFFER_SIZE] = {0};
         getcwd(current_directory, sizeof(current_directory));
 
         printf("Received command: %s", buffer);
 
-        //process the command
-
-        //ЗАТЫЧКА ДЖОКЕРА(filezilla moment)
         if (strncmp(buffer, "PORT", 4) == 0) {
+            //notify client that sever does not support active mode
             send_response(client_socket, "502 This server does not support active mode. Consider using passive mode instead.\r\n");
             continue;
         }
-
         if (strncmp(buffer, "PASV", 4) == 0) {
             char data_ip[INET_ADDRSTRLEN] = {0};
             int data_port;
