@@ -7,26 +7,101 @@
 #include <netinet/in.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <pwd.h>
+#include <time.h>
+
 
 #define PORT 21
 #define BUFFER_SIZE 1024
+#define LIST_BUFFER_SIZE 8192
 
 void handle_ftp_commands();
 
 char* get_ls(){
     FILE *ls_output;
-    char buffer[4096];
+    char buffer[4096] = {0};
 
+    //ls -l | sed '1d'
     //pipe
-    ls_output = popen("ls -l", "r");
+    ls_output = popen("ls -go | sed '1d'", "r");
 
     size_t bytesRead = fread(buffer, 1, sizeof(buffer), ls_output);
 
     buffer[bytesRead] = '\0';
+
+   // for(int i = 0; i < strlen(buffer); i++)
+   //     if(buffer[i] == '\t') buffer[i] = ' ';
     char* result = strdup(buffer);
     printf("%s", result);
 
-    return result;
+
+    char b[4095];
+    snprintf(b, sizeof(b), "-rw------- 1 peter 848 2023-12-20 11:22 00README.txt\r\n");
+    //    snprintf(b, sizeof(b), "-rw-------  1 peter         848 дек 14 11:22 00README.txt\r\n");
+    char* r = strdup(b);
+
+    return r;
+    //return result;
+}
+char* get_file_line(const char *filename, const struct stat *file_stat) {
+    char line[256] = {0};
+
+    char c1 = (S_ISDIR(file_stat->st_mode)) ? 'd' : '-';
+    char c2 = (file_stat->st_mode & S_IRUSR) ? 'r' : '-';
+    char c3 = (file_stat->st_mode & S_IWUSR) ? 'w' : '-';
+    char c4 = (file_stat->st_mode & S_IXUSR) ? 'x' : '-';
+    char c5 = (file_stat->st_mode & S_IRGRP) ? 'r' : '-';
+    char c6 = (file_stat->st_mode & S_IWGRP) ? 'w' : '-';
+    char c7 = (file_stat->st_mode & S_IXGRP) ? 'x' : '-';
+    char c8 = (file_stat->st_mode & S_IROTH) ? 'r' : '-';
+    char c9 = (file_stat->st_mode & S_IWOTH) ? 'w' : '-';
+    char c10 = (file_stat->st_mode & S_IXOTH) ? 'x' : '-';
+
+    char time[20];
+    strftime(time, sizeof(time), "%Y-%m-%d %H:%M", localtime(&file_stat->st_mtime));
+
+    snprintf(line, sizeof(line), "%c%c%c%c%c%c%c%c%c%c %lu %d %lld %s %s\n",
+             c1, c2, c3, c4, c5, c6, c7, c8, c9, c10,
+             (unsigned long)file_stat->st_nlink,
+             file_stat->st_uid,
+             (long long)file_stat->st_size,
+             time,
+             filename);
+
+    return strdup(line);
+}
+char* get_listing(){
+    const char *directory_path = ".";
+    DIR *dir;
+    struct dirent *entry;
+    struct stat file_stat;
+
+    dir = opendir(directory_path);
+    if (dir == NULL) {
+        perror("Error opening directory");
+        return "Error opening directory";
+    }
+
+    char info[LIST_BUFFER_SIZE] = {0};
+    while ((entry = readdir(dir)) != NULL) {
+        char file_path[256];
+        snprintf(file_path, sizeof(file_path), "%s/%s", directory_path, entry->d_name);
+
+        if (stat(file_path, &file_stat) == -1) {
+            perror("Error getting file information");
+            continue;
+        }
+
+        char* line = get_file_line(entry->d_name, &file_stat);
+        strcat(info, line);
+        free(line);
+    }
+    printf("Listing:\n%s", info);
+    closedir(dir);
+    char *l = strdup(info);
+
+
+    return l;
 }
 
 void send_response(int socket, const char *response) {
@@ -75,8 +150,8 @@ int open_passive_data_socket(char *ip, int *port) {
     struct sockaddr_in data_server_addr;
     memset(&data_server_addr, 0, sizeof(data_server_addr));
     data_server_addr.sin_family = AF_INET;
-   // data_server_addr.sin_addr.s_addr = INADDR_ANY;
-    data_server_addr.sin_addr.s_addr =  inet_addr("127.0.0.1");
+    data_server_addr.sin_addr.s_addr = INADDR_ANY;
+    //data_server_addr.sin_addr.s_addr =  inet_addr("127.0.0.1");
 
 
     data_server_addr.sin_port = 0;
@@ -121,7 +196,7 @@ int accept_passive_connection(int passive_socket) {
         return -1;
     }
 
-    char client_ip[INET_ADDRSTRLEN];
+    char client_ip[INET_ADDRSTRLEN] = {0};
     inet_ntop(AF_INET, &(client_addr.sin_addr), client_ip, INET_ADDRSTRLEN);
     printf("Accepted connection from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
 
@@ -136,7 +211,7 @@ void receive_file(int data_socket, const char* file_path) {
         return;
     }
 
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_received;
 
     while ((bytes_received = recv(data_socket, buffer, sizeof(buffer), 0)) > 0) {
@@ -157,7 +232,7 @@ void send_file(int data_socket, const char* file_path) {
         return;
     }
 
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
     size_t bytes_read;
 
     while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
@@ -170,7 +245,6 @@ struct sockaddr_in server_addr, client_addr;
 int server_socket, client_socket;
 
 int main() {
-
     socklen_t addr_size;
 
     //create socket
@@ -221,9 +295,9 @@ int main() {
 }
 
 void handle_ftp_commands() {
-    char buffer[BUFFER_SIZE];
-    char username[100];
-    char password[100];
+    char buffer[BUFFER_SIZE] = {0};
+    char username[100] = {0};
+    char password[100] = {0};
 
     send_response(client_socket, "220 Welcome to FTP server\r\n");
 
@@ -236,7 +310,7 @@ void handle_ftp_commands() {
             perror("Error receiving command");
             break;
         }
-        char current_directory[BUFFER_SIZE];
+        char current_directory[BUFFER_SIZE] = {0};
         getcwd(current_directory, sizeof(current_directory));
 
         printf("Received command: %s", buffer);
@@ -250,18 +324,21 @@ void handle_ftp_commands() {
         }
 
         if (strncmp(buffer, "PASV", 4) == 0) {
-            char data_ip[INET_ADDRSTRLEN];
+            char data_ip[INET_ADDRSTRLEN] = {0};
             int data_port;
             data_socket = open_passive_data_socket(data_ip, &data_port);
 
+            char *server_ip = get_server_ip_address(client_socket);
+            for(int i = 0; i < strlen(server_ip); i++)
+                if(server_ip[i] == '.') server_ip[i] = ',';
+
+            char response[BUFFER_SIZE] = {0};
             if (data_socket != -1) {
-                char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "227 Entering Passive Mode (%s,%d,%d).\r\n",
-                         get_server_ip_address(client_socket), get_data_port_high(data_socket), get_data_port_low(data_socket));
+                         server_ip, get_data_port_high(data_socket), get_data_port_low(data_socket));
 
                 send_response(client_socket, response);
             } else {
-                char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "425 Can't open data connection.\r\n");
                 send_response(client_socket, response);
             }
@@ -270,11 +347,11 @@ void handle_ftp_commands() {
         }
         if (strncmp(buffer, "STOR", 4) == 0) {
             int accepted_connection_socket = accept_passive_connection(data_socket);
-            char filename[100];
+            char filename[100] = {0};
             sscanf(buffer, "STOR %s", filename);
 
             if (accepted_connection_socket != -1) {
-                char response[BUFFER_SIZE];
+                char response[BUFFER_SIZE] = {0};
                 snprintf(response, sizeof(response), "150 Opening data connection for STOR.\r\n");
                 send_response(client_socket, response);
 
@@ -296,11 +373,11 @@ void handle_ftp_commands() {
         }
         if (strncmp(buffer, "RETR", 4) == 0) {
             int accepted_connection_socket = accept_passive_connection(data_socket);
-            char filename[100];
+            char filename[100] = {0};
             sscanf(buffer, "RETR %s", filename);
 
             if (accepted_connection_socket != -1) {
-                char response[BUFFER_SIZE];
+                char response[BUFFER_SIZE] = {0};
                 snprintf(response, sizeof(response), "150 Opening data connection for RETR.\r\n");
                 send_response(client_socket, response);
 
@@ -321,18 +398,15 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "EPSV", 4) == 0) {
-            char data_ip[INET_ADDRSTRLEN];
+            char data_ip[INET_ADDRSTRLEN] = {0};
             int data_port;
             data_socket = open_passive_data_socket(data_ip, &data_port);
 
+            char response[BUFFER_SIZE] = {0};
             if (data_socket != -1) {
-                char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "229 Entering Extended Passive Mode (|||%d|).\r\n", data_port);
                 send_response(client_socket, response);
-
-                //close(data_socket);
             } else {
-                char response[BUFFER_SIZE];
                 snprintf(response, sizeof(response), "425 Can't open data connection.\r\n");
                 send_response(client_socket, response);
             }
@@ -343,12 +417,12 @@ void handle_ftp_commands() {
             int accepted_connection_socket = accept_passive_connection(data_socket);
 
             if (accepted_connection_socket != -1) {
-                char response[BUFFER_SIZE];
+                char response[BUFFER_SIZE] = {0};
                 snprintf(response, sizeof(response), "150 Opening data connection for directory listing.\r\n");
                 send_response(client_socket, response);
 
-                char listing[BUFFER_SIZE];
-                char* ls_result = get_ls();
+                char listing[LIST_BUFFER_SIZE] = {0};
+                char* ls_result = get_listing();
 
                 snprintf(listing, sizeof(response), "%s\r\n", ls_result);
                 send_response(accepted_connection_socket, listing);
@@ -391,10 +465,10 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "RMD", 3) == 0) {
-            char dir_name[100];
+            char dir_name[100] = {0};
             sscanf(buffer, "RMD %s", dir_name);
 
-            char dir_path[PATH_MAX];
+            char dir_path[PATH_MAX] = {0};
             if (change_directory(dir_path, current_directory) == 0) {
                 strcat(dir_path, "/");
                 strcat(dir_path, dir_name);
@@ -410,10 +484,10 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "CWD", 3) == 0) {
-            char new_dir[100];
+            char new_dir[100] = {0};
             sscanf(buffer, "CWD %s", new_dir);
 
-            char new_dir_path[PATH_MAX];
+            char new_dir_path[PATH_MAX] = {0};
             if (change_directory(new_dir_path, current_directory) == 0) {
                 strcat(new_dir_path, "/");
                 strcat(new_dir_path, new_dir);
@@ -429,10 +503,10 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "MKD", 3) == 0) {
-            char dir_name[100];
+            char dir_name[100] = {0};
             sscanf(buffer, "MKD %s", dir_name);
 
-            char new_dir_path[PATH_MAX];
+            char new_dir_path[PATH_MAX] = {0};
             if (change_directory(new_dir_path, current_directory) == 0) {
                 strcat(new_dir_path, "/");
                 strcat(new_dir_path, dir_name);
@@ -448,7 +522,7 @@ void handle_ftp_commands() {
             continue;
         }
         if (strncmp(buffer, "PWD", 3) == 0) {
-            char response[BUFFER_SIZE];
+            char response[BUFFER_SIZE] = {0};
             snprintf(response, sizeof(response), "257 \"%s\" is the current directory\r\n", current_directory);
             send_response(client_socket, response);
             continue;
