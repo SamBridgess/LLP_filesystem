@@ -13,26 +13,17 @@
 #include <sys/types.h>
 
 void generate_file_handle(char *file_handle, size_t length) {
-    // Ensure the length is sufficient to hold your file handle
     if (length < 16) {
         fprintf(stderr, "Error: Insufficient buffer length for file handle\n");
         exit(EXIT_FAILURE);
     }
-
-    // Get current timestamp (you may want to replace this with a more sophisticated method)
     time_t current_time = time(NULL);
     if (current_time == -1) {
         perror("Error getting current time");
         exit(EXIT_FAILURE);
     }
-
-    // Use a simple unique identifier (e.g., process ID)
     pid_t pid = getpid();
-
-    // Combine timestamp and process ID to create a simple file handle
     uint64_t combined_value = ((uint64_t)current_time << 32) | (uint32_t)pid;
-
-    // Copy the combined value into the file handle buffer
     memcpy(file_handle, &combined_value, sizeof(uint64_t));
 }
 
@@ -137,6 +128,23 @@ nfsproc3_pathconf_3_svc(PATHCONF3args *argp, struct svc_req *rqstp)
 {
     static PATHCONF3res result;
     char *path;
+
+    struct stat st;
+    stat("/home/sam/nfs-give", &st);
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.type = 2;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.mode = st.st_mode & 0777;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.nlink = st.st_nlink;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid = st.st_uid;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid = st.st_size;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.size = st.st_size;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.used = st.st_size;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata1 = major(st.st_rdev);
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata2 = minor(st.st_rdev);
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.fsid = st.st_dev;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.fileid = st.st_ino;
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.atime = timespec_to_nfstime3(&st.st_atim);
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.mtime = timespec_to_nfstime3(&st.st_mtim);
+    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.ctime = timespec_to_nfstime3(&st.st_ctim);
 
 
     result.status = NFS3_OK;
