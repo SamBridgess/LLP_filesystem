@@ -536,3 +536,41 @@ xdr_PATHCONF3res (XDR *xdrs, PATHCONF3res *objp)
 	}
 	return TRUE;
 }
+
+bool_t
+xdr_GETATTR3args (XDR *xdrs, GETATTR3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->object))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_GETATTR3resok (XDR *xdrs, GETATTR3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_fattr3 (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_GETATTR3res (XDR *xdrs, GETATTR3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_GETATTR3resok (xdrs, &objp->GETATTR3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		break;
+	}
+	return TRUE;
+}

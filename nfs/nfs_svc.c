@@ -61,6 +61,7 @@ static void
 nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
+		GETATTR3args nfsproc3_getattr_3_arg;
 		FSINFO3args nfsproc3_fsinfo_3_arg;
 		PATHCONF3args nfsproc3_pathconf_3_arg;
 	} argument;
@@ -72,6 +73,12 @@ nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 	case NULLPROC:
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
+
+	case NFSPROC3_GETATTR:
+		_xdr_argument = (xdrproc_t) xdr_GETATTR3args;
+		_xdr_result = (xdrproc_t) xdr_GETATTR3res;
+		local = (char *(*)(char *, struct svc_req *)) nfsproc3_getattr_3_svc;
+		break;
 
 	case NFSPROC3_FSINFO:
 		_xdr_argument = (xdrproc_t) xdr_FSINFO3args;

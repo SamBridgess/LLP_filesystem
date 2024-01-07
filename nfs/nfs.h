@@ -252,6 +252,24 @@ struct PATHCONF3res {
 };
 typedef struct PATHCONF3res PATHCONF3res;
 
+struct GETATTR3args {
+	nfs_fh3 object;
+};
+typedef struct GETATTR3args GETATTR3args;
+
+struct GETATTR3resok {
+	fattr3 obj_attributes;
+};
+typedef struct GETATTR3resok GETATTR3resok;
+
+struct GETATTR3res {
+	nfsstat3 status;
+	union {
+		GETATTR3resok resok;
+	} GETATTR3res_u;
+};
+typedef struct GETATTR3res GETATTR3res;
+
 #define MOUNT 100005
 #define MOUNT_VERSION 3
 
@@ -272,6 +290,9 @@ extern int mount_3_freeresult ();
 #define NFS_V3 3
 
 #if defined(__STDC__) || defined(__cplusplus)
+#define NFSPROC3_GETATTR 1
+extern  GETATTR3res * nfsproc3_getattr_3(GETATTR3args *, CLIENT *);
+extern  GETATTR3res * nfsproc3_getattr_3_svc(GETATTR3args *, struct svc_req *);
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3(FSINFO3args *, CLIENT *);
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc(FSINFO3args *, struct svc_req *);
@@ -281,6 +302,9 @@ extern  PATHCONF3res * nfsproc3_pathconf_3_svc(PATHCONF3args *, struct svc_req *
 extern int nfs_program_3_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
+#define NFSPROC3_GETATTR 1
+extern  GETATTR3res * nfsproc3_getattr_3();
+extern  GETATTR3res * nfsproc3_getattr_3_svc();
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3();
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc();
@@ -331,6 +355,9 @@ extern  bool_t xdr_PATHCONF3args (XDR *, PATHCONF3args*);
 extern  bool_t xdr_PATHCONF3resok (XDR *, PATHCONF3resok*);
 extern  bool_t xdr_PATHCONF3resfail (XDR *, PATHCONF3resfail*);
 extern  bool_t xdr_PATHCONF3res (XDR *, PATHCONF3res*);
+extern  bool_t xdr_GETATTR3args (XDR *, GETATTR3args*);
+extern  bool_t xdr_GETATTR3resok (XDR *, GETATTR3resok*);
+extern  bool_t xdr_GETATTR3res (XDR *, GETATTR3res*);
 
 #else /* K&R C */
 extern bool_t xdr_uint64 ();
@@ -371,6 +398,9 @@ extern bool_t xdr_PATHCONF3args ();
 extern bool_t xdr_PATHCONF3resok ();
 extern bool_t xdr_PATHCONF3resfail ();
 extern bool_t xdr_PATHCONF3res ();
+extern bool_t xdr_GETATTR3args ();
+extern bool_t xdr_GETATTR3resok ();
+extern bool_t xdr_GETATTR3res ();
 
 #endif /* K&R C */
 

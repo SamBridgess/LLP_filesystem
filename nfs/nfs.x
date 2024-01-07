@@ -205,14 +205,30 @@ union PATHCONF3res switch (nfsstat3 status) {
     default:
         PATHCONF3resfail resfail;
 };
+/* GETATTR -----------------------------------------------------------------*/
+struct GETATTR3args {
+    nfs_fh3  object;
+};
+
+struct GETATTR3resok {
+    fattr3   obj_attributes;
+};
+
+union GETATTR3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        GETATTR3resok  resok;
+    default:
+        void;
+};
 /* --------------------------------------------------------------------*/
 
 program NFS_PROGRAM {
         version NFS_V3 {
-            /*
+           /*
            void NFSPROC3_NULL(void) = 0;
-
+*/
            GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
+            /*
            SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
            LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
            ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
