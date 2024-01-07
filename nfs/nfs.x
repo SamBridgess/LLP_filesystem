@@ -180,7 +180,33 @@ union FSINFO3res switch (nfsstat3 status) {
 };
 
 
+/* PATHCONF-------------------------------------------------------------*/
+struct PATHCONF3args {
+    nfs_fh3   object;
+};
+
+struct PATHCONF3resok {
+    post_op_attr obj_attributes;
+    uint32       linkmax;
+    uint32       name_max;
+    bool         no_trunc;
+    bool         chown_restricted;
+    bool         case_insensitive;
+    bool         case_preserving;
+};
+
+struct PATHCONF3resfail {
+    post_op_attr obj_attributes;
+};
+
+union PATHCONF3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        PATHCONF3resok   resok;
+    default:
+        PATHCONF3resfail resfail;
+};
 /* --------------------------------------------------------------------*/
+
 program NFS_PROGRAM {
         version NFS_V3 {
             /*
@@ -206,8 +232,8 @@ program NFS_PROGRAM {
            FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
             */
             FSINFO3res NFSPROC3_FSINFO(FSINFO3args) = 19;
-            /*
             PATHCONF3res NFSPROC3_PATHCONF(PATHCONF3args) = 20;
+            /*
             COMMIT3res NFSPROC3_COMMIT(COMMIT3args) = 21;
              */
         } = 3;
