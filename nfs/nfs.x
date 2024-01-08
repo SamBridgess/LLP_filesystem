@@ -220,8 +220,72 @@ union GETATTR3res switch (nfsstat3 status) {
     default:
         void;
 };
-/* --------------------------------------------------------------------*/
+/* ACCESS --------------------------------------------------------------*/
+const ACCESS3_READ    = 0x0001;
+const ACCESS3_LOOKUP  = 0x0002;
+const ACCESS3_MODIFY  = 0x0004;
+const ACCESS3_EXTEND  = 0x0008;
+const ACCESS3_DELETE  = 0x0010;
+const ACCESS3_EXECUTE = 0x0020;
 
+struct ACCESS3args {
+    nfs_fh3  object;
+    uint32   access;
+};
+
+struct ACCESS3resok {
+    post_op_attr   obj_attributes;
+    uint32         access;
+};
+
+struct ACCESS3resfail {
+    post_op_attr   obj_attributes;
+};
+union ACCESS3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        ACCESS3resok   resok;
+    default:
+        ACCESS3resfail resfail;
+};
+/* READDIR ---------------------------------------------------------------*/
+
+struct READDIR3args {
+    nfs_fh3      dir;
+    cookie3      cookie;
+    cookieverf3  cookieverf;
+    count3       count;
+};
+struct entry3 {
+    fileid3      fileid;
+    filename3    name;
+    cookie3      cookie;
+    entry3       *nextentry;
+};
+
+struct dirlist3 {
+    entry3       *entries;
+    bool         eof;
+};
+
+struct READDIR3resok {
+    post_op_attr dir_attributes;
+    cookieverf3  cookieverf;
+    dirlist3     reply;
+};
+
+struct READDIR3resfail {
+    post_op_attr dir_attributes;
+};
+union READDIR3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        READDIR3resok   resok;
+    default:
+        READDIR3resfail resfail;
+};
+
+
+
+/* ---------------------------------------------------------------*/
 program NFS_PROGRAM {
         version NFS_V3 {
            /*
@@ -231,7 +295,9 @@ program NFS_PROGRAM {
             /*
            SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
            LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
+           */
            ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
+           /*
            READLINK3res NFSPROC3_READLINK(READLINK3args) = 5;
            READ3res NFSPROC3_READ(READ3args) = 6;
            WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
@@ -243,7 +309,9 @@ program NFS_PROGRAM {
            RMDIR3res NFSPROC3_RMDIR(RMDIR3args) = 13;
            RENAME3res NFSPROC3_RENAME(RENAME3args) = 14;
            LINK3res NFSPROC3_LINK(LINK3args) = 15;
+           */
            READDIR3res NFSPROC3_READDIR(READDIR3args) = 16;
+           /*
            READDIRPLUS3res NFSPROC3_READDIRPLUS(READDIRPLUS3args) = 17;
            FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
             */

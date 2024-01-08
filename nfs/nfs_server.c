@@ -1,9 +1,8 @@
 #include "nfs.h"
 #include "stuff.h"
-
 #include <time.h>
-
 #include <sys/sysmacros.h>
+#include <dirent.h>
 
 void generate_file_handle(char *file_handle, size_t length) {
     if (length < 16) {
@@ -19,86 +18,109 @@ void generate_file_handle(char *file_handle, size_t length) {
     uint64_t combined_value = ((uint64_t)current_time << 32) | (uint32_t)pid;
     memcpy(file_handle, &combined_value, sizeof(uint64_t));
 }
-
-
-mountres3 *
-mountproc3_mnt_3_svc(dirpath *argp, struct svc_req *rqstp)
-{
-    printf("mountproc3_mnt_3_svc\n");
-
-    static mountres3  result;
-    static int auth = AUTH_UNIX;
-
-    size_t path_len = strlen(*argp);
-    char file_handle[32] = {0};
-    char *dpath = *argp;
-
-
-    printf("generated filehandle: %zu ", path_len);
-    for(int i = 0; i < 32; i++) {
-        if(i < path_len)
-            file_handle[i] = *(dpath + i);
-        else
-            file_handle[i] = '#';
-        printf("%c", file_handle[i]);
-    }
-    printf("\n");
-
-
-    result.fhs_status = MNT3_OK;
-    result.mountres3_u.mountinfo.fhandle.fhandle3_len = 32;
-    result.mountres3_u.mountinfo.fhandle.fhandle3_val = file_handle;
-    result.mountres3_u.mountinfo.auth_flavors.auth_flavors_len = 1;
-    result.mountres3_u.mountinfo.auth_flavors.auth_flavors_val = &auth;
-
-    return &result;
-}
-
-// Function to convert struct timespec to nfstime3
 nfstime3 timespec_to_nfstime3(const struct timespec *ts) {
     nfstime3 result;
     result.seconds = ts->tv_sec;
     result.nseconds = ts->tv_nsec;
     return result;
 }
+void fill_attributes(char *path, fattr3 *attributes) {
+    struct stat st;
+    stat(path, &st);
+
+    attributes->type = 2;
+    attributes->mode = st.st_mode & 0777;
+    attributes->nlink = st.st_nlink;
+    attributes->uid = st.st_uid;
+    attributes->gid = st.st_size;
+    attributes->size = st.st_size;
+    attributes->used = st.st_size;
+    attributes->rdev.specdata1 = major(st.st_rdev);
+    attributes->rdev.specdata2 = minor(st.st_rdev);
+    attributes->fsid = st.st_dev;
+    attributes->fileid = st.st_ino;
+    attributes->atime = timespec_to_nfstime3(&st.st_atim);
+    attributes->mtime = timespec_to_nfstime3(&st.st_mtim);
+    attributes->ctime = timespec_to_nfstime3(&st.st_ctim);
+}
+void fill_entries_for_readdir(const char *dirPath, entry3 **entries, int *eof) {
+    DIR *dir = opendir(dirPath);
+    if (dir == NULL) {
+        perror("opendir");
+        *eof = 1;
+        return;
+    }
+
+    struct dirent *dirEntry;
+    entry3 *prevEntry = NULL;
+    entry3 *firstEntry = NULL;
+
+    while ((dirEntry = readdir(dir)) != NULL) {
+        entry3 *newEntry = malloc(sizeof(entry3));
+        if (newEntry == NULL) {
+            perror("malloc");
+            *eof = 1;
+            closedir(dir);
+            return;
+        }
+
+        newEntry->fileid = dirEntry->d_ino;
+        newEntry->name = dirEntry->d_name;
+        newEntry->cookie = dirEntry->d_off;
+        newEntry->nextentry = NULL;
+
+        if (prevEntry != NULL) {
+            prevEntry->nextentry = newEntry;
+        } else {
+            // This is the first entry
+            firstEntry = newEntry;
+        }
+
+        prevEntry = newEntry;
+    }
+
+    closedir(dir);
+
+    *entries = firstEntry;
+    *eof = 0;
+}
+
+
+
+mountres3 *
+mountproc3_mnt_3_svc(dirpath *argp, struct svc_req *rqstp)
+{
+    static mountres3  result;
+    static int auth = AUTH_UNIX;
+    char *path = *argp;
+
+    printf("generated filehandle: %s\n", path);
+
+    result.fhs_status = MNT3_OK;
+    result.mountres3_u.mountinfo.fhandle.fhandle3_len = strlen(path);
+    result.mountres3_u.mountinfo.fhandle.fhandle3_val = path;
+    result.mountres3_u.mountinfo.auth_flavors.auth_flavors_len = 1;
+    result.mountres3_u.mountinfo.auth_flavors.auth_flavors_val = &auth;
+
+    return &result;
+}
 
 FSINFO3res *
 nfsproc3_fsinfo_3_svc(FSINFO3args *argp, struct svc_req *rqstp)
 {
-    printf("nfsproc3_fsinfo_3_svc\n");
-
-
     static FSINFO3res result;
-    char *path;
     unsigned int maxdata;
-    printf("%s\n", argp->fsroot.data.data_val);
+    char *path = argp->fsroot.data.data_val;
+    printf("Received smth: %s\n", path);
 
     if (get_socket_type(rqstp) == SOCK_STREAM)
         maxdata = NFS_MAXDATA_TCP;
     else
         maxdata = NFS_MAXDATA_UDP;
 
-    struct stat st;
-    stat("/home/sam/nfs-give", &st);
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.type = 2;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.mode = st.st_mode & 0777;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.nlink = st.st_nlink;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid = st.st_uid;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid = st.st_size;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.size = st.st_size;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.used = st.st_size;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata1 = major(st.st_rdev);
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata2 = minor(st.st_rdev);
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.fsid = st.st_dev;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.fileid = st.st_ino;
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.atime = timespec_to_nfstime3(&st.st_atim);
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.mtime = timespec_to_nfstime3(&st.st_mtim);
-    result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes.ctime = timespec_to_nfstime3(&st.st_ctim);
-
-
 
     result.FSINFO3res_u.resok.obj_attributes.attributes_follow = 1;
-
+    fill_attributes(path, &result.FSINFO3res_u.resok.obj_attributes.post_op_attr_u.attributes);
 
     result.status = NFS3_OK;
     result.FSINFO3res_u.resok.rtmax = maxdata;
@@ -120,25 +142,11 @@ PATHCONF3res *
 nfsproc3_pathconf_3_svc(PATHCONF3args *argp, struct svc_req *rqstp)
 {
     static PATHCONF3res result;
-    char *path;
+    char *path = argp->object.data.data_val;
 
-    struct stat st;
-    stat("/home/sam/nfs-give", &st);
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.type = 2;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.mode = st.st_mode & 0777;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.nlink = st.st_nlink;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.uid = st.st_uid;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.gid = st.st_size;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.size = st.st_size;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.used = st.st_size;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata1 = major(st.st_rdev);
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.rdev.specdata2 = minor(st.st_rdev);
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.fsid = st.st_dev;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.fileid = st.st_ino;
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.atime = timespec_to_nfstime3(&st.st_atim);
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.mtime = timespec_to_nfstime3(&st.st_mtim);
-    result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes.ctime = timespec_to_nfstime3(&st.st_ctim);
 
+    result.PATHCONF3res_u.resok.obj_attributes.attributes_follow = 1;
+    fill_attributes(path, &result.PATHCONF3res_u.resok.obj_attributes.post_op_attr_u.attributes);
 
     result.status = NFS3_OK;
     result.PATHCONF3res_u.resok.linkmax = 0xFFFFFFFF;
@@ -155,28 +163,52 @@ GETATTR3res *
 nfsproc3_getattr_3_svc(GETATTR3args *argp, struct svc_req *rqstp)
 {
     static GETATTR3res result;
-    char *path;
-    post_op_attr post;
+    char *path = argp->object.data.data_val;
 
-    struct stat st;
-    stat("/home/sam/nfs-give", &st);
-    result.GETATTR3res_u.resok.obj_attributes.type = 2;
-    result.GETATTR3res_u.resok.obj_attributes.mode = st.st_mode & 0777;
-    result.GETATTR3res_u.resok.obj_attributes.nlink = st.st_nlink;
-    result.GETATTR3res_u.resok.obj_attributes.uid = st.st_uid;
-    result.GETATTR3res_u.resok.obj_attributes.gid = st.st_size;
-    result.GETATTR3res_u.resok.obj_attributes.size = st.st_size;
-    result.GETATTR3res_u.resok.obj_attributes.used = st.st_size;
-    result.GETATTR3res_u.resok.obj_attributes.rdev.specdata1 = major(st.st_rdev);
-    result.GETATTR3res_u.resok.obj_attributes.rdev.specdata2 = minor(st.st_rdev);
-    result.GETATTR3res_u.resok.obj_attributes.fsid = st.st_dev;
-    result.GETATTR3res_u.resok.obj_attributes.fileid = st.st_ino;
-    result.GETATTR3res_u.resok.obj_attributes.atime = timespec_to_nfstime3(&st.st_atim);
-    result.GETATTR3res_u.resok.obj_attributes.mtime = timespec_to_nfstime3(&st.st_mtim);
-    result.GETATTR3res_u.resok.obj_attributes.ctime = timespec_to_nfstime3(&st.st_ctim);
-
+    fill_attributes(path, &result.GETATTR3res_u.resok.obj_attributes);
 
     result.status = NFS3_OK;
+
+    return &result;
+}
+
+ACCESS3res *
+nfsproc3_access_3_svc(ACCESS3args *argp, struct svc_req *rqstp)
+{
+    static ACCESS3res result;
+    char *path = argp->object.data.data_val;
+
+    result.ACCESS3res_u.resok.obj_attributes.attributes_follow = 1;
+    fill_attributes(path, &result.ACCESS3res_u.resok.obj_attributes.post_op_attr_u.attributes);
+
+    result.status = NFS3_OK;
+    result.ACCESS3res_u.resok.access = ACCESS3_READ | ACCESS3_LOOKUP | ACCESS3_MODIFY | ACCESS3_EXTEND | ACCESS3_DELETE | ACCESS3_EXECUTE;
+
+    return &result;
+}
+
+READDIR3res *
+nfsproc3_readdir_3_svc(READDIR3args *argp, struct svc_req *rqstp)
+{
+    static READDIR3res  result;
+    char *path = argp->dir.data.data_val;
+
+
+    entry3 *entries = NULL;
+    int eof;
+
+    fill_entries_for_readdir(path, &entries, &eof);
+
+    if (eof) {
+        result.READDIR3res_u.resok.reply.eof = 1;  // TRUE
+    } else {
+        result.READDIR3res_u.resok.reply.eof = 0;  // FALSE
+    }
+
+    result.READDIR3res_u.resok.reply.entries = entries;
+    result.READDIR3res_u.resok.dir_attributes.attributes_follow = 1;  // TRUE
+
+    fill_attributes(path, &result.READDIR3res_u.resok.dir_attributes.post_op_attr_u.attributes);
 
     return &result;
 }

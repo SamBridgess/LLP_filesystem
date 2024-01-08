@@ -269,6 +269,81 @@ struct GETATTR3res {
 	} GETATTR3res_u;
 };
 typedef struct GETATTR3res GETATTR3res;
+#define ACCESS3_READ 0x0001
+#define ACCESS3_LOOKUP 0x0002
+#define ACCESS3_MODIFY 0x0004
+#define ACCESS3_EXTEND 0x0008
+#define ACCESS3_DELETE 0x0010
+#define ACCESS3_EXECUTE 0x0020
+
+struct ACCESS3args {
+	nfs_fh3 object;
+	uint32 access;
+};
+typedef struct ACCESS3args ACCESS3args;
+
+struct ACCESS3resok {
+	post_op_attr obj_attributes;
+	uint32 access;
+};
+typedef struct ACCESS3resok ACCESS3resok;
+
+struct ACCESS3resfail {
+	post_op_attr obj_attributes;
+};
+typedef struct ACCESS3resfail ACCESS3resfail;
+
+struct ACCESS3res {
+	nfsstat3 status;
+	union {
+		ACCESS3resok resok;
+		ACCESS3resfail resfail;
+	} ACCESS3res_u;
+};
+typedef struct ACCESS3res ACCESS3res;
+
+struct READDIR3args {
+	nfs_fh3 dir;
+	cookie3 cookie;
+	cookieverf3 cookieverf;
+	count3 count;
+};
+typedef struct READDIR3args READDIR3args;
+
+struct entry3 {
+	fileid3 fileid;
+	filename3 name;
+	cookie3 cookie;
+	struct entry3 *nextentry;
+};
+typedef struct entry3 entry3;
+
+struct dirlist3 {
+	entry3 *entries;
+	bool_t eof;
+};
+typedef struct dirlist3 dirlist3;
+
+struct READDIR3resok {
+	post_op_attr dir_attributes;
+	cookieverf3 cookieverf;
+	dirlist3 reply;
+};
+typedef struct READDIR3resok READDIR3resok;
+
+struct READDIR3resfail {
+	post_op_attr dir_attributes;
+};
+typedef struct READDIR3resfail READDIR3resfail;
+
+struct READDIR3res {
+	nfsstat3 status;
+	union {
+		READDIR3resok resok;
+		READDIR3resfail resfail;
+	} READDIR3res_u;
+};
+typedef struct READDIR3res READDIR3res;
 
 #define MOUNT 100005
 #define MOUNT_VERSION 3
@@ -293,6 +368,12 @@ extern int mount_3_freeresult ();
 #define NFSPROC3_GETATTR 1
 extern  GETATTR3res * nfsproc3_getattr_3(GETATTR3args *, CLIENT *);
 extern  GETATTR3res * nfsproc3_getattr_3_svc(GETATTR3args *, struct svc_req *);
+#define NFSPROC3_ACCESS 4
+extern  ACCESS3res * nfsproc3_access_3(ACCESS3args *, CLIENT *);
+extern  ACCESS3res * nfsproc3_access_3_svc(ACCESS3args *, struct svc_req *);
+#define NFSPROC3_READDIR 16
+extern  READDIR3res * nfsproc3_readdir_3(READDIR3args *, CLIENT *);
+extern  READDIR3res * nfsproc3_readdir_3_svc(READDIR3args *, struct svc_req *);
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3(FSINFO3args *, CLIENT *);
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc(FSINFO3args *, struct svc_req *);
@@ -305,6 +386,12 @@ extern int nfs_program_3_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 #define NFSPROC3_GETATTR 1
 extern  GETATTR3res * nfsproc3_getattr_3();
 extern  GETATTR3res * nfsproc3_getattr_3_svc();
+#define NFSPROC3_ACCESS 4
+extern  ACCESS3res * nfsproc3_access_3();
+extern  ACCESS3res * nfsproc3_access_3_svc();
+#define NFSPROC3_READDIR 16
+extern  READDIR3res * nfsproc3_readdir_3();
+extern  READDIR3res * nfsproc3_readdir_3_svc();
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3();
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc();
@@ -358,6 +445,16 @@ extern  bool_t xdr_PATHCONF3res (XDR *, PATHCONF3res*);
 extern  bool_t xdr_GETATTR3args (XDR *, GETATTR3args*);
 extern  bool_t xdr_GETATTR3resok (XDR *, GETATTR3resok*);
 extern  bool_t xdr_GETATTR3res (XDR *, GETATTR3res*);
+extern  bool_t xdr_ACCESS3args (XDR *, ACCESS3args*);
+extern  bool_t xdr_ACCESS3resok (XDR *, ACCESS3resok*);
+extern  bool_t xdr_ACCESS3resfail (XDR *, ACCESS3resfail*);
+extern  bool_t xdr_ACCESS3res (XDR *, ACCESS3res*);
+extern  bool_t xdr_READDIR3args (XDR *, READDIR3args*);
+extern  bool_t xdr_entry3 (XDR *, entry3*);
+extern  bool_t xdr_dirlist3 (XDR *, dirlist3*);
+extern  bool_t xdr_READDIR3resok (XDR *, READDIR3resok*);
+extern  bool_t xdr_READDIR3resfail (XDR *, READDIR3resfail*);
+extern  bool_t xdr_READDIR3res (XDR *, READDIR3res*);
 
 #else /* K&R C */
 extern bool_t xdr_uint64 ();
@@ -401,6 +498,16 @@ extern bool_t xdr_PATHCONF3res ();
 extern bool_t xdr_GETATTR3args ();
 extern bool_t xdr_GETATTR3resok ();
 extern bool_t xdr_GETATTR3res ();
+extern bool_t xdr_ACCESS3args ();
+extern bool_t xdr_ACCESS3resok ();
+extern bool_t xdr_ACCESS3resfail ();
+extern bool_t xdr_ACCESS3res ();
+extern bool_t xdr_READDIR3args ();
+extern bool_t xdr_entry3 ();
+extern bool_t xdr_dirlist3 ();
+extern bool_t xdr_READDIR3resok ();
+extern bool_t xdr_READDIR3resfail ();
+extern bool_t xdr_READDIR3res ();
 
 #endif /* K&R C */
 

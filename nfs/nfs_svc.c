@@ -62,6 +62,8 @@ nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
 		GETATTR3args nfsproc3_getattr_3_arg;
+		ACCESS3args nfsproc3_access_3_arg;
+		READDIR3args nfsproc3_readdir_3_arg;
 		FSINFO3args nfsproc3_fsinfo_3_arg;
 		PATHCONF3args nfsproc3_pathconf_3_arg;
 	} argument;
@@ -78,6 +80,18 @@ nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_GETATTR3args;
 		_xdr_result = (xdrproc_t) xdr_GETATTR3res;
 		local = (char *(*)(char *, struct svc_req *)) nfsproc3_getattr_3_svc;
+		break;
+
+	case NFSPROC3_ACCESS:
+		_xdr_argument = (xdrproc_t) xdr_ACCESS3args;
+		_xdr_result = (xdrproc_t) xdr_ACCESS3res;
+		local = (char *(*)(char *, struct svc_req *)) nfsproc3_access_3_svc;
+		break;
+
+	case NFSPROC3_READDIR:
+		_xdr_argument = (xdrproc_t) xdr_READDIR3args;
+		_xdr_result = (xdrproc_t) xdr_READDIR3res;
+		local = (char *(*)(char *, struct svc_req *)) nfsproc3_readdir_3_svc;
 		break;
 
 	case NFSPROC3_FSINFO:

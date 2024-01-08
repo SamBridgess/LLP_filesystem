@@ -574,3 +574,145 @@ xdr_GETATTR3res (XDR *xdrs, GETATTR3res *objp)
 	}
 	return TRUE;
 }
+
+bool_t
+xdr_ACCESS3args (XDR *xdrs, ACCESS3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->object))
+		 return FALSE;
+	 if (!xdr_uint32 (xdrs, &objp->access))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_ACCESS3resok (XDR *xdrs, ACCESS3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	 if (!xdr_uint32 (xdrs, &objp->access))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_ACCESS3resfail (XDR *xdrs, ACCESS3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_ACCESS3res (XDR *xdrs, ACCESS3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_ACCESS3resok (xdrs, &objp->ACCESS3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_ACCESS3resfail (xdrs, &objp->ACCESS3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
+bool_t
+xdr_READDIR3args (XDR *xdrs, READDIR3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->dir))
+		 return FALSE;
+	 if (!xdr_cookie3 (xdrs, &objp->cookie))
+		 return FALSE;
+	 if (!xdr_cookieverf3 (xdrs, objp->cookieverf))
+		 return FALSE;
+	 if (!xdr_count3 (xdrs, &objp->count))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_entry3 (XDR *xdrs, entry3 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_fileid3 (xdrs, &objp->fileid))
+		 return FALSE;
+	 if (!xdr_filename3 (xdrs, &objp->name))
+		 return FALSE;
+	 if (!xdr_cookie3 (xdrs, &objp->cookie))
+		 return FALSE;
+	 if (!xdr_pointer (xdrs, (char **)&objp->nextentry, sizeof (entry3), (xdrproc_t) xdr_entry3))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_dirlist3 (XDR *xdrs, dirlist3 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_pointer (xdrs, (char **)&objp->entries, sizeof (entry3), (xdrproc_t) xdr_entry3))
+		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->eof))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READDIR3resok (XDR *xdrs, READDIR3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->dir_attributes))
+		 return FALSE;
+	 if (!xdr_cookieverf3 (xdrs, objp->cookieverf))
+		 return FALSE;
+	 if (!xdr_dirlist3 (xdrs, &objp->reply))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READDIR3resfail (XDR *xdrs, READDIR3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->dir_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READDIR3res (XDR *xdrs, READDIR3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_READDIR3resok (xdrs, &objp->READDIR3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_READDIR3resfail (xdrs, &objp->READDIR3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
