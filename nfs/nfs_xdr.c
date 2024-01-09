@@ -716,3 +716,129 @@ xdr_READDIR3res (XDR *xdrs, READDIR3res *objp)
 	}
 	return TRUE;
 }
+
+bool_t
+xdr_diropargs3 (XDR *xdrs, diropargs3 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->dir))
+		 return FALSE;
+	 if (!xdr_filename3 (xdrs, &objp->name))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_LOOKUP3args (XDR *xdrs, LOOKUP3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_diropargs3 (xdrs, &objp->what))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_LOOKUP3resok (XDR *xdrs, LOOKUP3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->object))
+		 return FALSE;
+	 if (!xdr_post_op_attr (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	 if (!xdr_post_op_attr (xdrs, &objp->dir_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_LOOKUP3resfail (XDR *xdrs, LOOKUP3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->dir_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_LOOKUP3res (XDR *xdrs, LOOKUP3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_LOOKUP3resok (xdrs, &objp->LOOKUP3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_LOOKUP3resfail (xdrs, &objp->LOOKUP3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
+bool_t
+xdr_READ3args (XDR *xdrs, READ3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->file))
+		 return FALSE;
+	 if (!xdr_offset3 (xdrs, &objp->offset))
+		 return FALSE;
+	 if (!xdr_count3 (xdrs, &objp->count))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READ3resok (XDR *xdrs, READ3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->file_attributes))
+		 return FALSE;
+	 if (!xdr_count3 (xdrs, &objp->count))
+		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->eof))
+		 return FALSE;
+	 if (!xdr_bytes (xdrs, (char **)&objp->data.data_val, (u_int *) &objp->data.data_len, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READ3resfail (XDR *xdrs, READ3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->file_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_READ3res (XDR *xdrs, READ3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_READ3resok (xdrs, &objp->READ3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_READ3resfail (xdrs, &objp->READ3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}

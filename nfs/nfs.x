@@ -285,40 +285,93 @@ union READDIR3res switch (nfsstat3 status) {
 
 
 
+/* LOOKUP ---------------------------------------------------------------*/
+struct diropargs3 {
+    nfs_fh3     dir;
+    filename3   name;
+};
+struct LOOKUP3args {
+    diropargs3  what;
+};
+
+struct LOOKUP3resok {
+    nfs_fh3      object;
+    post_op_attr obj_attributes;
+    post_op_attr dir_attributes;
+};
+
+struct LOOKUP3resfail {
+    post_op_attr dir_attributes;
+};
+
+union LOOKUP3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        LOOKUP3resok    resok;
+    default:
+        LOOKUP3resfail  resfail;
+};
+/* READ ----------------------------------------------------------*/
+struct READ3args {
+    nfs_fh3  file;
+    offset3  offset;
+    count3   count;
+};
+
+struct READ3resok {
+    post_op_attr   file_attributes;
+    count3         count;
+    bool           eof;
+    opaque         data<>;
+};
+
+struct READ3resfail {
+    post_op_attr   file_attributes;
+};
+
+union READ3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        READ3resok   resok;
+    default:
+        READ3resfail resfail;
+};
 /* ---------------------------------------------------------------*/
+
+
 program NFS_PROGRAM {
-        version NFS_V3 {
-           /*
-           void NFSPROC3_NULL(void) = 0;
-*/
-           GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
-            /*
-           SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
-           LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
-           */
-           ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
-           /*
-           READLINK3res NFSPROC3_READLINK(READLINK3args) = 5;
-           READ3res NFSPROC3_READ(READ3args) = 6;
-           WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
-           CREATE3res NFSPROC3_CREATE(CREATE3args) = 8;
-           MKDIR3res NFSPROC3_MKDIR(MKDIR3args) = 9;
-           SYMLINK3res NFSPROC3_SYMLINK(SYMLINK3args) = 10;
-           MKNOD3res NFSPROC3_MKNOD(MKNOD3args) = 11;
-           REMOVE3res NFSPROC3_REMOVE(REMOVE3args) = 12;
-           RMDIR3res NFSPROC3_RMDIR(RMDIR3args) = 13;
-           RENAME3res NFSPROC3_RENAME(RENAME3args) = 14;
-           LINK3res NFSPROC3_LINK(LINK3args) = 15;
-           */
-           READDIR3res NFSPROC3_READDIR(READDIR3args) = 16;
-           /*
-           READDIRPLUS3res NFSPROC3_READDIRPLUS(READDIRPLUS3args) = 17;
-           FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
-            */
-            FSINFO3res NFSPROC3_FSINFO(FSINFO3args) = 19;
-            PATHCONF3res NFSPROC3_PATHCONF(PATHCONF3args) = 20;
-            /*
-            COMMIT3res NFSPROC3_COMMIT(COMMIT3args) = 21;
-             */
-        } = 3;
+    version NFS_V3 {
+        /*
+        void NFSPROC3_NULL(void) = 0;
+        */
+        GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
+        /*
+        SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
+        */
+        LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
+        ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
+        /*
+        READLINK3res NFSPROC3_READLINK(READLINK3args) = 5;
+        */
+        READ3res NFSPROC3_READ(READ3args) = 6;
+        /*
+        WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
+        CREATE3res NFSPROC3_CREATE(CREATE3args) = 8;
+        MKDIR3res NFSPROC3_MKDIR(MKDIR3args) = 9;
+        SYMLINK3res NFSPROC3_SYMLINK(SYMLINK3args) = 10;
+        MKNOD3res NFSPROC3_MKNOD(MKNOD3args) = 11;
+        REMOVE3res NFSPROC3_REMOVE(REMOVE3args) = 12;
+        RMDIR3res NFSPROC3_RMDIR(RMDIR3args) = 13;
+        RENAME3res NFSPROC3_RENAME(RENAME3args) = 14;
+        LINK3res NFSPROC3_LINK(LINK3args) = 15;
+        */
+        READDIR3res NFSPROC3_READDIR(READDIR3args) = 16;
+        /*
+        READDIRPLUS3res NFSPROC3_READDIRPLUS(READDIRPLUS3args) = 17;
+        FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
+        */
+        FSINFO3res NFSPROC3_FSINFO(FSINFO3args) = 19;
+        PATHCONF3res NFSPROC3_PATHCONF(PATHCONF3args) = 20;
+        /*
+        COMMIT3res NFSPROC3_COMMIT(COMMIT3args) = 21;
+        */
+    } = 3;
 } = 100003;
