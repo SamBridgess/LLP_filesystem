@@ -384,6 +384,107 @@ union WRITE3res switch (nfsstat3 status) {
     default:
         WRITE3resfail  resfail;
 };
+/* CREATE ---------------------------------------------------------------*/
+ enum time_how {
+         DONT_CHANGE        = 0,
+         SET_TO_SERVER_TIME = 1,
+         SET_TO_CLIENT_TIME = 2
+      };
+
+      union set_mode3 switch (bool set_it) {
+
+   case TRUE:
+            mode3    mode;
+         default:
+            void;
+         };
+
+         union set_uid3 switch (bool set_it) {
+         case TRUE:
+            uid3     uid;
+         default:
+            void;
+         };
+
+         union set_gid3 switch (bool set_it) {
+         case TRUE:
+            gid3     gid;
+         default:
+            void;
+         };
+
+         union set_size3 switch (bool set_it) {
+         case TRUE:
+            size3    size;
+         default:
+            void;
+         };
+
+         union set_atime switch (time_how set_it) {
+         case SET_TO_CLIENT_TIME:
+            nfstime3  atime;
+         default:
+            void;
+         };
+
+         union set_mtime switch (time_how set_it) {
+         case SET_TO_CLIENT_TIME:
+            nfstime3  mtime;
+         default:
+            void;
+         };
+
+struct sattr3 {
+    set_mode3   mode;
+    set_uid3    uid;
+    set_gid3    gid;
+    set_size3   size;
+    set_atime   atime;
+    set_mtime   mtime;
+};
+union post_op_fh3 switch (bool handle_follows) {
+    case TRUE:
+        nfs_fh3  handle;
+    case FALSE:
+        void;
+};
+
+enum createmode3 {
+    UNCHECKED = 0,
+    GUARDED   = 1,
+    EXCLUSIVE = 2
+};
+
+union createhow3 switch (createmode3 mode) {
+    case UNCHECKED:
+    case GUARDED:
+        sattr3       obj_attributes;
+    case EXCLUSIVE:
+    createverf3  verf;
+};
+
+struct CREATE3args {
+    diropargs3   where;
+    createhow3   how;
+};
+
+struct CREATE3resok {
+    post_op_fh3   obj;
+    post_op_attr  obj_attributes;
+    wcc_data      dir_wcc;
+};
+
+struct CREATE3resfail {
+    wcc_data      dir_wcc;
+};
+
+union CREATE3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        CREATE3resok    resok;
+    default:
+        CREATE3resfail  resfail;
+};
+
 /* ---------------------------------------------------------------*/
 
 program NFS_PROGRAM {
@@ -402,8 +503,8 @@ program NFS_PROGRAM {
         */
         READ3res NFSPROC3_READ(READ3args) = 6;
         WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
-        /*
         CREATE3res NFSPROC3_CREATE(CREATE3args) = 8;
+        /*
         MKDIR3res NFSPROC3_MKDIR(MKDIR3args) = 9;
         SYMLINK3res NFSPROC3_SYMLINK(SYMLINK3args) = 10;
         MKNOD3res NFSPROC3_MKNOD(MKNOD3args) = 11;

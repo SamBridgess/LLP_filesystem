@@ -287,3 +287,15 @@ nfsproc3_write_3_svc(WRITE3args *argp, struct svc_req *rqstp)
 
     return &result;
 }
+
+CREATE3res *
+nfsproc3_create_3_svc(CREATE3args *argp, struct svc_req *rqstp)
+{
+    static CREATE3res  result;
+
+    /*
+     * insert server code here
+     */
+
+    return &result;
+}

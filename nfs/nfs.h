@@ -471,6 +471,122 @@ struct WRITE3res {
 };
 typedef struct WRITE3res WRITE3res;
 
+enum time_how {
+	DONT_CHANGE = 0,
+	SET_TO_SERVER_TIME = 1,
+	SET_TO_CLIENT_TIME = 2,
+};
+typedef enum time_how time_how;
+
+struct set_mode3 {
+	bool_t set_it;
+	union {
+		mode3 mode;
+	} set_mode3_u;
+};
+typedef struct set_mode3 set_mode3;
+
+struct set_uid3 {
+	bool_t set_it;
+	union {
+		uid3 uid;
+	} set_uid3_u;
+};
+typedef struct set_uid3 set_uid3;
+
+struct set_gid3 {
+	bool_t set_it;
+	union {
+		gid3 gid;
+	} set_gid3_u;
+};
+typedef struct set_gid3 set_gid3;
+
+struct set_size3 {
+	bool_t set_it;
+	union {
+		size3 size;
+	} set_size3_u;
+};
+typedef struct set_size3 set_size3;
+
+struct set_atime {
+	time_how set_it;
+	union {
+		nfstime3 atime;
+	} set_atime_u;
+};
+typedef struct set_atime set_atime;
+
+struct set_mtime {
+	time_how set_it;
+	union {
+		nfstime3 mtime;
+	} set_mtime_u;
+};
+typedef struct set_mtime set_mtime;
+
+struct sattr3 {
+	set_mode3 mode;
+	set_uid3 uid;
+	set_gid3 gid;
+	set_size3 size;
+	set_atime atime;
+	set_mtime mtime;
+};
+typedef struct sattr3 sattr3;
+
+struct post_op_fh3 {
+	bool_t handle_follows;
+	union {
+		nfs_fh3 handle;
+	} post_op_fh3_u;
+};
+typedef struct post_op_fh3 post_op_fh3;
+
+enum createmode3 {
+	UNCHECKED = 0,
+	GUARDED = 1,
+	EXCLUSIVE = 2,
+};
+typedef enum createmode3 createmode3;
+
+struct createhow3 {
+	createmode3 mode;
+	union {
+		sattr3 obj_attributes;
+		createverf3 verf;
+	} createhow3_u;
+};
+typedef struct createhow3 createhow3;
+
+struct CREATE3args {
+	diropargs3 where;
+	createhow3 how;
+};
+typedef struct CREATE3args CREATE3args;
+
+struct CREATE3resok {
+	post_op_fh3 obj;
+	post_op_attr obj_attributes;
+	wcc_data dir_wcc;
+};
+typedef struct CREATE3resok CREATE3resok;
+
+struct CREATE3resfail {
+	wcc_data dir_wcc;
+};
+typedef struct CREATE3resfail CREATE3resfail;
+
+struct CREATE3res {
+	nfsstat3 status;
+	union {
+		CREATE3resok resok;
+		CREATE3resfail resfail;
+	} CREATE3res_u;
+};
+typedef struct CREATE3res CREATE3res;
+
 #define MOUNT 100005
 #define MOUNT_VERSION 3
 
@@ -506,6 +622,9 @@ extern  READ3res * nfsproc3_read_3_svc(READ3args *, struct svc_req *);
 #define NFSPROC3_WRITE 7
 extern  WRITE3res * nfsproc3_write_3(WRITE3args *, CLIENT *);
 extern  WRITE3res * nfsproc3_write_3_svc(WRITE3args *, struct svc_req *);
+#define NFSPROC3_CREATE 8
+extern  CREATE3res * nfsproc3_create_3(CREATE3args *, CLIENT *);
+extern  CREATE3res * nfsproc3_create_3_svc(CREATE3args *, struct svc_req *);
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3(READDIR3args *, CLIENT *);
 extern  READDIR3res * nfsproc3_readdir_3_svc(READDIR3args *, struct svc_req *);
@@ -533,6 +652,9 @@ extern  READ3res * nfsproc3_read_3_svc();
 #define NFSPROC3_WRITE 7
 extern  WRITE3res * nfsproc3_write_3();
 extern  WRITE3res * nfsproc3_write_3_svc();
+#define NFSPROC3_CREATE 8
+extern  CREATE3res * nfsproc3_create_3();
+extern  CREATE3res * nfsproc3_create_3_svc();
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3();
 extern  READDIR3res * nfsproc3_readdir_3_svc();
@@ -616,6 +738,21 @@ extern  bool_t xdr_WRITE3args (XDR *, WRITE3args*);
 extern  bool_t xdr_WRITE3resok (XDR *, WRITE3resok*);
 extern  bool_t xdr_WRITE3resfail (XDR *, WRITE3resfail*);
 extern  bool_t xdr_WRITE3res (XDR *, WRITE3res*);
+extern  bool_t xdr_time_how (XDR *, time_how*);
+extern  bool_t xdr_set_mode3 (XDR *, set_mode3*);
+extern  bool_t xdr_set_uid3 (XDR *, set_uid3*);
+extern  bool_t xdr_set_gid3 (XDR *, set_gid3*);
+extern  bool_t xdr_set_size3 (XDR *, set_size3*);
+extern  bool_t xdr_set_atime (XDR *, set_atime*);
+extern  bool_t xdr_set_mtime (XDR *, set_mtime*);
+extern  bool_t xdr_sattr3 (XDR *, sattr3*);
+extern  bool_t xdr_post_op_fh3 (XDR *, post_op_fh3*);
+extern  bool_t xdr_createmode3 (XDR *, createmode3*);
+extern  bool_t xdr_createhow3 (XDR *, createhow3*);
+extern  bool_t xdr_CREATE3args (XDR *, CREATE3args*);
+extern  bool_t xdr_CREATE3resok (XDR *, CREATE3resok*);
+extern  bool_t xdr_CREATE3resfail (XDR *, CREATE3resfail*);
+extern  bool_t xdr_CREATE3res (XDR *, CREATE3res*);
 
 #else /* K&R C */
 extern bool_t xdr_uint64 ();
@@ -686,6 +823,21 @@ extern bool_t xdr_WRITE3args ();
 extern bool_t xdr_WRITE3resok ();
 extern bool_t xdr_WRITE3resfail ();
 extern bool_t xdr_WRITE3res ();
+extern bool_t xdr_time_how ();
+extern bool_t xdr_set_mode3 ();
+extern bool_t xdr_set_uid3 ();
+extern bool_t xdr_set_gid3 ();
+extern bool_t xdr_set_size3 ();
+extern bool_t xdr_set_atime ();
+extern bool_t xdr_set_mtime ();
+extern bool_t xdr_sattr3 ();
+extern bool_t xdr_post_op_fh3 ();
+extern bool_t xdr_createmode3 ();
+extern bool_t xdr_createhow3 ();
+extern bool_t xdr_CREATE3args ();
+extern bool_t xdr_CREATE3resok ();
+extern bool_t xdr_CREATE3resfail ();
+extern bool_t xdr_CREATE3res ();
 
 #endif /* K&R C */
 

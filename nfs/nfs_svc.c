@@ -66,6 +66,7 @@ nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 		ACCESS3args nfsproc3_access_3_arg;
 		READ3args nfsproc3_read_3_arg;
 		WRITE3args nfsproc3_write_3_arg;
+		CREATE3args nfsproc3_create_3_arg;
 		READDIR3args nfsproc3_readdir_3_arg;
 		FSINFO3args nfsproc3_fsinfo_3_arg;
 		PATHCONF3args nfsproc3_pathconf_3_arg;
@@ -107,6 +108,12 @@ nfs_program_3(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_WRITE3args;
 		_xdr_result = (xdrproc_t) xdr_WRITE3res;
 		local = (char *(*)(char *, struct svc_req *)) nfsproc3_write_3_svc;
+		break;
+
+	case NFSPROC3_CREATE:
+		_xdr_argument = (xdrproc_t) xdr_CREATE3args;
+		_xdr_result = (xdrproc_t) xdr_CREATE3res;
+		local = (char *(*)(char *, struct svc_req *)) nfsproc3_create_3_svc;
 		break;
 
 	case NFSPROC3_READDIR:
