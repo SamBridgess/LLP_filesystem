@@ -334,8 +334,39 @@ union READ3res switch (nfsstat3 status) {
     default:
         READ3resfail resfail;
 };
-/* ---------------------------------------------------------------*/
+/* WRITE ---------------------------------------------------------------*/
+enum stable_how {
+    UNSTABLE  = 0,
+    DATA_SYNC = 1,
+    FILE_SYNC = 2
+};
 
+struct WRITE3args {
+    nfs_fh3     file;
+    offset3     offset;
+    count3      count;
+    stable_how  stable;
+    opaque      data<>;
+};
+
+struct WRITE3resok {
+    wcc_data    file_wcc;
+    count3      count;
+    stable_how  committed;
+    writeverf3  verf;
+};
+
+struct WRITE3resfail {
+    wcc_data    file_wcc;
+};
+
+union WRITE3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        WRITE3resok    resok;
+    default:
+        WRITE3resfail  resfail;
+};
+/* ---------------------------------------------------------------*/
 
 program NFS_PROGRAM {
     version NFS_V3 {
@@ -352,8 +383,8 @@ program NFS_PROGRAM {
         READLINK3res NFSPROC3_READLINK(READLINK3args) = 5;
         */
         READ3res NFSPROC3_READ(READ3args) = 6;
-        /*
         WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
+        /*
         CREATE3res NFSPROC3_CREATE(CREATE3args) = 8;
         MKDIR3res NFSPROC3_MKDIR(MKDIR3args) = 9;
         SYMLINK3res NFSPROC3_SYMLINK(SYMLINK3args) = 10;

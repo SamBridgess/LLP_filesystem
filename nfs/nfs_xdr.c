@@ -842,3 +842,77 @@ xdr_READ3res (XDR *xdrs, READ3res *objp)
 	}
 	return TRUE;
 }
+
+bool_t
+xdr_stable_how (XDR *xdrs, stable_how *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_enum (xdrs, (enum_t *) objp))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_WRITE3args (XDR *xdrs, WRITE3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->file))
+		 return FALSE;
+	 if (!xdr_offset3 (xdrs, &objp->offset))
+		 return FALSE;
+	 if (!xdr_count3 (xdrs, &objp->count))
+		 return FALSE;
+	 if (!xdr_stable_how (xdrs, &objp->stable))
+		 return FALSE;
+	 if (!xdr_bytes (xdrs, (char **)&objp->data.data_val, (u_int *) &objp->data.data_len, ~0))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_WRITE3resok (XDR *xdrs, WRITE3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_wcc_data (xdrs, &objp->file_wcc))
+		 return FALSE;
+	 if (!xdr_count3 (xdrs, &objp->count))
+		 return FALSE;
+	 if (!xdr_stable_how (xdrs, &objp->committed))
+		 return FALSE;
+	 if (!xdr_writeverf3 (xdrs, objp->verf))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_WRITE3resfail (XDR *xdrs, WRITE3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_wcc_data (xdrs, &objp->file_wcc))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_WRITE3res (XDR *xdrs, WRITE3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_WRITE3resok (xdrs, &objp->WRITE3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_WRITE3resfail (xdrs, &objp->WRITE3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}

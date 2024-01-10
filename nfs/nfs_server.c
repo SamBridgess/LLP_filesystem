@@ -1,23 +1,9 @@
 #include "nfs.h"
 #include "stuff.h"
-#include <time.h>
+#include "read.h"
 #include <sys/sysmacros.h>
+#include <fcntl.h>
 #include <dirent.h>
-
-void generate_file_handle(char *file_handle, size_t length) {
-    if (length < 16) {
-        fprintf(stderr, "Error: Insufficient buffer length for file handle\n");
-        exit(EXIT_FAILURE);
-    }
-    time_t current_time = time(NULL);
-    if (current_time == -1) {
-        perror("Error getting current time");
-        exit(EXIT_FAILURE);
-    }
-    pid_t pid = getpid();
-    uint64_t combined_value = ((uint64_t)current_time << 32) | (uint32_t)pid;
-    memcpy(file_handle, &combined_value, sizeof(uint64_t));
-}
 
 nfstime3 timespec_to_nfstime3(const struct timespec *ts) {
     nfstime3 result;
@@ -102,7 +88,7 @@ void fill_entries_for_readdir(const char *dirPath, entry3 **entries, int *eof) {
 mountres3 *
 mountproc3_mnt_3_svc(dirpath *argp, struct svc_req *rqstp)
 {
-    printf("mountproc3_mnt_3_svc\n");
+    printf("MNT\n");
 
     static mountres3  result;
     static int auth = AUTH_UNIX;
@@ -120,7 +106,7 @@ mountproc3_mnt_3_svc(dirpath *argp, struct svc_req *rqstp)
 FSINFO3res *
 nfsproc3_fsinfo_3_svc(FSINFO3args *argp, struct svc_req *rqstp)
 {
-    printf("nfsproc3_fsinfo_3_svc\n");
+    printf("FSINFO\n");
 
     static FSINFO3res result;
     unsigned int maxdata;
@@ -154,7 +140,7 @@ nfsproc3_fsinfo_3_svc(FSINFO3args *argp, struct svc_req *rqstp)
 PATHCONF3res *
 nfsproc3_pathconf_3_svc(PATHCONF3args *argp, struct svc_req *rqstp)
 {
-    printf("nfsproc3_pathconf_3_svc\n");
+    printf("PATHCONF\n");
 
     static PATHCONF3res result;
     char *path = argp->object.data.data_val;
@@ -177,7 +163,7 @@ nfsproc3_pathconf_3_svc(PATHCONF3args *argp, struct svc_req *rqstp)
 GETATTR3res *
 nfsproc3_getattr_3_svc(GETATTR3args *argp, struct svc_req *rqstp)
 {
-    printf("nfsproc3_getattr_3_svc\n");
+    printf("GETATTR\n");
     static GETATTR3res result;
     char *path = argp->object.data.data_val;
     //path[strlen(path) - 1] = '\0';
@@ -199,7 +185,7 @@ nfsproc3_access_3_svc(ACCESS3args *argp, struct svc_req *rqstp)
     int len = argp->object.data.data_len;
     path[len] = '\0';
 
-    printf("nfsproc3_access_3_svc    %d %s\n",len, path);
+    printf("ACCESS    %d %s\n",len, path);
 
     result.ACCESS3res_u.resok.obj_attributes.attributes_follow = 1;
     fill_attributes(path, &result.ACCESS3res_u.resok.obj_attributes.post_op_attr_u.attributes);
@@ -213,7 +199,7 @@ nfsproc3_access_3_svc(ACCESS3args *argp, struct svc_req *rqstp)
 READDIR3res *
 nfsproc3_readdir_3_svc(READDIR3args *argp, struct svc_req *rqstp)
 {
-    printf("nfsproc3_readdir_3_svc\n");
+    printf("READDIR\n");
     static READDIR3res  result;
     char *path = argp->dir.data.data_val;
     int len = argp->dir.data.data_len;
@@ -257,7 +243,7 @@ nfsproc3_lookup_3_svc(LOOKUP3args *argp, struct svc_req *rqstp)
     result.LOOKUP3res_u.resok.dir_attributes.attributes_follow = 1;
     fill_attributes(dirPath, &result.LOOKUP3res_u.resok.dir_attributes.post_op_attr_u.attributes);
 
-    printf("nfsproc3_lookup_3_svc     %s (%s + %s)\n", path, dirPath, fileName);
+    printf("LOOKUP     %s (%s + %s)\n", path, dirPath, fileName);
 
     if(fill_attributes(path, &result.LOOKUP3res_u.resok.obj_attributes.post_op_attr_u.attributes) == 0){
         printf("sending LOOOKUP NFS3_OK\n");
@@ -277,11 +263,27 @@ nfsproc3_lookup_3_svc(LOOKUP3args *argp, struct svc_req *rqstp)
 READ3res *
 nfsproc3_read_3_svc(READ3args *argp, struct svc_req *rqstp)
 {
-    static READ3res  result;
+    printf("READ\n");
 
-    /*
-     * insert server code here
-     */
+    static READ3res  result;
+    char *path = argp->file.data.data_val;
+    int len = argp->file.data.data_len;
+    path[len] = '\0';
+
+    off_t offset = argp->offset;
+    size_t count = 1024;
+
+    fill_READ3res_stream(path, offset, count, &result);
+
+    //   result.status = NFS3_OK;
+
+    return &result;
+}
+
+WRITE3res *
+nfsproc3_write_3_svc(WRITE3args *argp, struct svc_req *rqstp)
+{
+    static WRITE3res  result;
 
     return &result;
 }

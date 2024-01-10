@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define NFS_MAXDATA_TCP 524288
 #define NFS_MAXDATA_UDP 32768

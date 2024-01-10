@@ -409,6 +409,47 @@ struct READ3res {
 };
 typedef struct READ3res READ3res;
 
+enum stable_how {
+	UNSTABLE = 0,
+	DATA_SYNC = 1,
+	FILE_SYNC = 2,
+};
+typedef enum stable_how stable_how;
+
+struct WRITE3args {
+	nfs_fh3 file;
+	offset3 offset;
+	count3 count;
+	stable_how stable;
+	struct {
+		u_int data_len;
+		char *data_val;
+	} data;
+};
+typedef struct WRITE3args WRITE3args;
+
+struct WRITE3resok {
+	wcc_data file_wcc;
+	count3 count;
+	stable_how committed;
+	writeverf3 verf;
+};
+typedef struct WRITE3resok WRITE3resok;
+
+struct WRITE3resfail {
+	wcc_data file_wcc;
+};
+typedef struct WRITE3resfail WRITE3resfail;
+
+struct WRITE3res {
+	nfsstat3 status;
+	union {
+		WRITE3resok resok;
+		WRITE3resfail resfail;
+	} WRITE3res_u;
+};
+typedef struct WRITE3res WRITE3res;
+
 #define MOUNT 100005
 #define MOUNT_VERSION 3
 
@@ -441,6 +482,9 @@ extern  ACCESS3res * nfsproc3_access_3_svc(ACCESS3args *, struct svc_req *);
 #define NFSPROC3_READ 6
 extern  READ3res * nfsproc3_read_3(READ3args *, CLIENT *);
 extern  READ3res * nfsproc3_read_3_svc(READ3args *, struct svc_req *);
+#define NFSPROC3_WRITE 7
+extern  WRITE3res * nfsproc3_write_3(WRITE3args *, CLIENT *);
+extern  WRITE3res * nfsproc3_write_3_svc(WRITE3args *, struct svc_req *);
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3(READDIR3args *, CLIENT *);
 extern  READDIR3res * nfsproc3_readdir_3_svc(READDIR3args *, struct svc_req *);
@@ -465,6 +509,9 @@ extern  ACCESS3res * nfsproc3_access_3_svc();
 #define NFSPROC3_READ 6
 extern  READ3res * nfsproc3_read_3();
 extern  READ3res * nfsproc3_read_3_svc();
+#define NFSPROC3_WRITE 7
+extern  WRITE3res * nfsproc3_write_3();
+extern  WRITE3res * nfsproc3_write_3_svc();
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3();
 extern  READDIR3res * nfsproc3_readdir_3_svc();
@@ -540,6 +587,11 @@ extern  bool_t xdr_READ3args (XDR *, READ3args*);
 extern  bool_t xdr_READ3resok (XDR *, READ3resok*);
 extern  bool_t xdr_READ3resfail (XDR *, READ3resfail*);
 extern  bool_t xdr_READ3res (XDR *, READ3res*);
+extern  bool_t xdr_stable_how (XDR *, stable_how*);
+extern  bool_t xdr_WRITE3args (XDR *, WRITE3args*);
+extern  bool_t xdr_WRITE3resok (XDR *, WRITE3resok*);
+extern  bool_t xdr_WRITE3resfail (XDR *, WRITE3resfail*);
+extern  bool_t xdr_WRITE3res (XDR *, WRITE3res*);
 
 #else /* K&R C */
 extern bool_t xdr_uint64 ();
@@ -602,6 +654,11 @@ extern bool_t xdr_READ3args ();
 extern bool_t xdr_READ3resok ();
 extern bool_t xdr_READ3resfail ();
 extern bool_t xdr_READ3res ();
+extern bool_t xdr_stable_how ();
+extern bool_t xdr_WRITE3args ();
+extern bool_t xdr_WRITE3resok ();
+extern bool_t xdr_WRITE3resfail ();
+extern bool_t xdr_WRITE3res ();
 
 #endif /* K&R C */
 
