@@ -409,6 +409,27 @@ struct READ3res {
 };
 typedef struct READ3res READ3res;
 
+struct wcc_attr {
+	size3 size;
+	nfstime3 mtime;
+	nfstime3 ctime;
+};
+typedef struct wcc_attr wcc_attr;
+
+struct pre_op_attr {
+	bool_t attributes_follow;
+	union {
+		wcc_attr attributes;
+	} pre_op_attr_u;
+};
+typedef struct pre_op_attr pre_op_attr;
+
+struct wcc_data {
+	pre_op_attr before;
+	post_op_attr after;
+};
+typedef struct wcc_data wcc_data;
+
 enum stable_how {
 	UNSTABLE = 0,
 	DATA_SYNC = 1,
@@ -587,6 +608,9 @@ extern  bool_t xdr_READ3args (XDR *, READ3args*);
 extern  bool_t xdr_READ3resok (XDR *, READ3resok*);
 extern  bool_t xdr_READ3resfail (XDR *, READ3resfail*);
 extern  bool_t xdr_READ3res (XDR *, READ3res*);
+extern  bool_t xdr_wcc_attr (XDR *, wcc_attr*);
+extern  bool_t xdr_pre_op_attr (XDR *, pre_op_attr*);
+extern  bool_t xdr_wcc_data (XDR *, wcc_data*);
 extern  bool_t xdr_stable_how (XDR *, stable_how*);
 extern  bool_t xdr_WRITE3args (XDR *, WRITE3args*);
 extern  bool_t xdr_WRITE3resok (XDR *, WRITE3resok*);
@@ -654,6 +678,9 @@ extern bool_t xdr_READ3args ();
 extern bool_t xdr_READ3resok ();
 extern bool_t xdr_READ3resfail ();
 extern bool_t xdr_READ3res ();
+extern bool_t xdr_wcc_attr ();
+extern bool_t xdr_pre_op_attr ();
+extern bool_t xdr_wcc_data ();
 extern bool_t xdr_stable_how ();
 extern bool_t xdr_WRITE3args ();
 extern bool_t xdr_WRITE3resok ();

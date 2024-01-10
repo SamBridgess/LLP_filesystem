@@ -844,6 +844,52 @@ xdr_READ3res (XDR *xdrs, READ3res *objp)
 }
 
 bool_t
+xdr_wcc_attr (XDR *xdrs, wcc_attr *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_size3 (xdrs, &objp->size))
+		 return FALSE;
+	 if (!xdr_nfstime3 (xdrs, &objp->mtime))
+		 return FALSE;
+	 if (!xdr_nfstime3 (xdrs, &objp->ctime))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_pre_op_attr (XDR *xdrs, pre_op_attr *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_bool (xdrs, &objp->attributes_follow))
+		 return FALSE;
+	switch (objp->attributes_follow) {
+	case TRUE:
+		 if (!xdr_wcc_attr (xdrs, &objp->pre_op_attr_u.attributes))
+			 return FALSE;
+		break;
+	case FALSE:
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+bool_t
+xdr_wcc_data (XDR *xdrs, wcc_data *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_pre_op_attr (xdrs, &objp->before))
+		 return FALSE;
+	 if (!xdr_post_op_attr (xdrs, &objp->after))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
 xdr_stable_how (XDR *xdrs, stable_how *objp)
 {
 	register int32_t *buf;

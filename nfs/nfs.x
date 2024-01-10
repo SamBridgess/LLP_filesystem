@@ -335,6 +335,24 @@ union READ3res switch (nfsstat3 status) {
         READ3resfail resfail;
 };
 /* WRITE ---------------------------------------------------------------*/
+struct wcc_attr {
+    size3       size;
+    nfstime3    mtime;
+    nfstime3    ctime;
+};
+
+union pre_op_attr switch (bool attributes_follow) {
+    case TRUE:
+        wcc_attr  attributes;
+    case FALSE:
+        void;
+};
+
+struct wcc_data {
+    pre_op_attr    before;
+    post_op_attr   after;
+};
+
 enum stable_how {
     UNSTABLE  = 0,
     DATA_SYNC = 1,
