@@ -385,54 +385,53 @@ union WRITE3res switch (nfsstat3 status) {
         WRITE3resfail  resfail;
 };
 /* CREATE ---------------------------------------------------------------*/
- enum time_how {
-         DONT_CHANGE        = 0,
-         SET_TO_SERVER_TIME = 1,
-         SET_TO_CLIENT_TIME = 2
-      };
+enum time_how {
+    DONT_CHANGE        = 0,
+    SET_TO_SERVER_TIME = 1,
+    SET_TO_CLIENT_TIME = 2
+};
 
-      union set_mode3 switch (bool set_it) {
+union set_mode3 switch (bool set_it) {
+    case TRUE:
+        mode3    mode;
+    default:
+        void;
+};
 
-   case TRUE:
-            mode3    mode;
-         default:
-            void;
-         };
+union set_uid3 switch (bool set_it) {
+    case TRUE:
+        uid3     uid;
+    default:
+        void;
+};
 
-         union set_uid3 switch (bool set_it) {
-         case TRUE:
-            uid3     uid;
-         default:
-            void;
-         };
+union set_gid3 switch (bool set_it) {
+    case TRUE:
+        gid3     gid;
+    default:
+        void;
+    };
 
-         union set_gid3 switch (bool set_it) {
-         case TRUE:
-            gid3     gid;
-         default:
-            void;
-         };
+union set_size3 switch (bool set_it) {
+    case TRUE:
+        size3    size;
+    default:
+        void;
+};
 
-         union set_size3 switch (bool set_it) {
-         case TRUE:
-            size3    size;
-         default:
-            void;
-         };
+union set_atime switch (time_how set_it) {
+    case SET_TO_CLIENT_TIME:
+        nfstime3  atime;
+    default:
+        void;
+};
 
-         union set_atime switch (time_how set_it) {
-         case SET_TO_CLIENT_TIME:
-            nfstime3  atime;
-         default:
-            void;
-         };
-
-         union set_mtime switch (time_how set_it) {
-         case SET_TO_CLIENT_TIME:
-            nfstime3  mtime;
-         default:
-            void;
-         };
+union set_mtime switch (time_how set_it) {
+    case SET_TO_CLIENT_TIME:
+        nfstime3  mtime;
+    default:
+        void;
+};
 
 struct sattr3 {
     set_mode3   mode;
@@ -485,6 +484,60 @@ union CREATE3res switch (nfsstat3 status) {
         CREATE3resfail  resfail;
 };
 
+/* FSSTAT ---------------------------------------------------------------*/
+struct FSSTAT3args {
+    nfs_fh3   fsroot;
+};
+
+struct FSSTAT3resok {
+    post_op_attr obj_attributes;
+    size3        tbytes;
+    size3        fbytes;
+    size3        abytes;
+    size3        tfiles;
+    size3        ffiles;
+    size3        afiles;
+    uint32       invarsec;
+};
+
+struct FSSTAT3resfail {
+    post_op_attr obj_attributes;
+};
+
+union FSSTAT3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        FSSTAT3resok   resok;
+    default:
+        FSSTAT3resfail resfail;
+};
+/* SETATTR ---------------------------------------------------------------*/
+union sattrguard3 switch (bool check) {
+    case TRUE:
+        nfstime3  obj_ctime;
+    case FALSE:
+        void;
+};
+
+struct SETATTR3args {
+    nfs_fh3      object;
+    sattr3       new_attributes;
+    sattrguard3  guard;
+};
+
+struct SETATTR3resok {
+    wcc_data  obj_wcc;
+};
+
+struct SETATTR3resfail {
+    wcc_data  obj_wcc;
+};
+
+union SETATTR3res switch (nfsstat3 status) {
+    case NFS3_OK:
+        SETATTR3resok   resok;
+    default:
+        SETATTR3resfail resfail;
+};
 /* ---------------------------------------------------------------*/
 
 program NFS_PROGRAM {
@@ -493,9 +546,7 @@ program NFS_PROGRAM {
         void NFSPROC3_NULL(void) = 0;
         */
         GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
-        /*
         SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
-        */
         LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
         ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
         /*
@@ -516,8 +567,8 @@ program NFS_PROGRAM {
         READDIR3res NFSPROC3_READDIR(READDIR3args) = 16;
         /*
         READDIRPLUS3res NFSPROC3_READDIRPLUS(READDIRPLUS3args) = 17;
-        FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
         */
+        FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
         FSINFO3res NFSPROC3_FSINFO(FSINFO3args) = 19;
         PATHCONF3res NFSPROC3_PATHCONF(PATHCONF3args) = 20;
         /*

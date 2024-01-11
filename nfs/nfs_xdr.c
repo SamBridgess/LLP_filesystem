@@ -1209,3 +1209,141 @@ xdr_CREATE3res (XDR *xdrs, CREATE3res *objp)
 	}
 	return TRUE;
 }
+
+bool_t
+xdr_FSSTAT3args (XDR *xdrs, FSSTAT3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->fsroot))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_FSSTAT3resok (XDR *xdrs, FSSTAT3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->tbytes))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->fbytes))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->abytes))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->tfiles))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->ffiles))
+		 return FALSE;
+	 if (!xdr_size3 (xdrs, &objp->afiles))
+		 return FALSE;
+	 if (!xdr_uint32 (xdrs, &objp->invarsec))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_FSSTAT3resfail (XDR *xdrs, FSSTAT3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_post_op_attr (xdrs, &objp->obj_attributes))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_FSSTAT3res (XDR *xdrs, FSSTAT3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_FSSTAT3resok (xdrs, &objp->FSSTAT3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_FSSTAT3resfail (xdrs, &objp->FSSTAT3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
+
+bool_t
+xdr_sattrguard3 (XDR *xdrs, sattrguard3 *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_bool (xdrs, &objp->check))
+		 return FALSE;
+	switch (objp->check) {
+	case TRUE:
+		 if (!xdr_nfstime3 (xdrs, &objp->sattrguard3_u.obj_ctime))
+			 return FALSE;
+		break;
+	case FALSE:
+		break;
+	default:
+		return FALSE;
+	}
+	return TRUE;
+}
+
+bool_t
+xdr_SETATTR3args (XDR *xdrs, SETATTR3args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfs_fh3 (xdrs, &objp->object))
+		 return FALSE;
+	 if (!xdr_sattr3 (xdrs, &objp->new_attributes))
+		 return FALSE;
+	 if (!xdr_sattrguard3 (xdrs, &objp->guard))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_SETATTR3resok (XDR *xdrs, SETATTR3resok *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_wcc_data (xdrs, &objp->obj_wcc))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_SETATTR3resfail (XDR *xdrs, SETATTR3resfail *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_wcc_data (xdrs, &objp->obj_wcc))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_SETATTR3res (XDR *xdrs, SETATTR3res *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_nfsstat3 (xdrs, &objp->status))
+		 return FALSE;
+	switch (objp->status) {
+	case NFS3_OK:
+		 if (!xdr_SETATTR3resok (xdrs, &objp->SETATTR3res_u.resok))
+			 return FALSE;
+		break;
+	default:
+		 if (!xdr_SETATTR3resfail (xdrs, &objp->SETATTR3res_u.resfail))
+			 return FALSE;
+		break;
+	}
+	return TRUE;
+}
