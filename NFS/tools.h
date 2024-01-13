@@ -5,6 +5,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
+#include <dirent.h>
+#include <sys/sysmacros.h>
+#include <fcntl.h>
 
 #define NFS_MAXDATA_TCP 524288
 #define NFS_MAXDATA_UDP 32768
@@ -17,10 +20,10 @@
 #define NFS_MAXPATHLEN 1024
 #define CACHE_ENTRIES    4096
 typedef struct {
-    uint32 dev;			/* device */
-    uint64 ino;			/* inode */
+    uint32 dev;			        /* device */
+    uint64 ino;			        /* inode */
     char path[NFS_MAXPATHLEN];	/* pathname */
-    unsigned int use;		/* last use */
+    unsigned int use;		    /* last use */
 } unfs3_cache_t;
 static unfs3_cache_t fh_cache[CACHE_ENTRIES];
 
@@ -33,7 +36,9 @@ typedef struct {
     unsigned char	inos[FH_MAXLEN];
 } unfs3_fh_t;
 
-
+nfstime3 timespec_to_nfstime3(const struct timespec *ts);
+int fill_attributes(char *path, fattr3 *attributes);
+void fill_entries_for_readdir(const char *dirPath, entry3 **entries, int *eof);
 int get_socket_type(struct svc_req *rqstp);
 u_int fh_length(const unfs3_fh_t * fh);
 nfs_fh3 fh_encode(const unfs3_fh_t *fh, char *buffer);

@@ -334,210 +334,7 @@ union READ3res switch (nfsstat3 status) {
     default:
         READ3resfail resfail;
 };
-/* WRITE ---------------------------------------------------------------*/
-struct wcc_attr {
-    size3       size;
-    nfstime3    mtime;
-    nfstime3    ctime;
-};
 
-union pre_op_attr switch (bool attributes_follow) {
-    case TRUE:
-        wcc_attr  attributes;
-    case FALSE:
-        void;
-};
-
-struct wcc_data {
-    pre_op_attr    before;
-    post_op_attr   after;
-};
-
-enum stable_how {
-    UNSTABLE  = 0,
-    DATA_SYNC = 1,
-    FILE_SYNC = 2
-};
-
-struct WRITE3args {
-    nfs_fh3     file;
-    offset3     offset;
-    count3      count;
-    stable_how  stable;
-    opaque      data<>;
-};
-
-struct WRITE3resok {
-    wcc_data    file_wcc;
-    count3      count;
-    stable_how  committed;
-    writeverf3  verf;
-};
-
-struct WRITE3resfail {
-    wcc_data    file_wcc;
-};
-
-union WRITE3res switch (nfsstat3 status) {
-    case NFS3_OK:
-        WRITE3resok    resok;
-    default:
-        WRITE3resfail  resfail;
-};
-/* CREATE ---------------------------------------------------------------*/
-enum time_how {
-    DONT_CHANGE        = 0,
-    SET_TO_SERVER_TIME = 1,
-    SET_TO_CLIENT_TIME = 2
-};
-
-union set_mode3 switch (bool set_it) {
-    case TRUE:
-        mode3    mode;
-    default:
-        void;
-};
-
-union set_uid3 switch (bool set_it) {
-    case TRUE:
-        uid3     uid;
-    default:
-        void;
-};
-
-union set_gid3 switch (bool set_it) {
-    case TRUE:
-        gid3     gid;
-    default:
-        void;
-    };
-
-union set_size3 switch (bool set_it) {
-    case TRUE:
-        size3    size;
-    default:
-        void;
-};
-
-union set_atime switch (time_how set_it) {
-    case SET_TO_CLIENT_TIME:
-        nfstime3  atime;
-    default:
-        void;
-};
-
-union set_mtime switch (time_how set_it) {
-    case SET_TO_CLIENT_TIME:
-        nfstime3  mtime;
-    default:
-        void;
-};
-
-struct sattr3 {
-    set_mode3   mode;
-    set_uid3    uid;
-    set_gid3    gid;
-    set_size3   size;
-    set_atime   atime;
-    set_mtime   mtime;
-};
-union post_op_fh3 switch (bool handle_follows) {
-    case TRUE:
-        nfs_fh3  handle;
-    case FALSE:
-        void;
-};
-
-enum createmode3 {
-    UNCHECKED = 0,
-    GUARDED   = 1,
-    EXCLUSIVE = 2
-};
-
-union createhow3 switch (createmode3 mode) {
-    case UNCHECKED:
-    case GUARDED:
-        sattr3       obj_attributes;
-    case EXCLUSIVE:
-    createverf3  verf;
-};
-
-struct CREATE3args {
-    diropargs3   where;
-    createhow3   how;
-};
-
-struct CREATE3resok {
-    post_op_fh3   obj;
-    post_op_attr  obj_attributes;
-    wcc_data      dir_wcc;
-};
-
-struct CREATE3resfail {
-    wcc_data      dir_wcc;
-};
-
-union CREATE3res switch (nfsstat3 status) {
-    case NFS3_OK:
-        CREATE3resok    resok;
-    default:
-        CREATE3resfail  resfail;
-};
-
-/* FSSTAT ---------------------------------------------------------------*/
-struct FSSTAT3args {
-    nfs_fh3   fsroot;
-};
-
-struct FSSTAT3resok {
-    post_op_attr obj_attributes;
-    size3        tbytes;
-    size3        fbytes;
-    size3        abytes;
-    size3        tfiles;
-    size3        ffiles;
-    size3        afiles;
-    uint32       invarsec;
-};
-
-struct FSSTAT3resfail {
-    post_op_attr obj_attributes;
-};
-
-union FSSTAT3res switch (nfsstat3 status) {
-    case NFS3_OK:
-        FSSTAT3resok   resok;
-    default:
-        FSSTAT3resfail resfail;
-};
-/* SETATTR ---------------------------------------------------------------*/
-union sattrguard3 switch (bool check) {
-    case TRUE:
-        nfstime3  obj_ctime;
-    case FALSE:
-        void;
-};
-
-struct SETATTR3args {
-    nfs_fh3      object;
-    sattr3       new_attributes;
-    sattrguard3  guard;
-};
-
-struct SETATTR3resok {
-    wcc_data  obj_wcc;
-};
-
-struct SETATTR3resfail {
-    wcc_data  obj_wcc;
-};
-
-union SETATTR3res switch (nfsstat3 status) {
-    case NFS3_OK:
-        SETATTR3resok   resok;
-    default:
-        SETATTR3resfail resfail;
-};
 /* ---------------------------------------------------------------*/
 
 program NFS_PROGRAM {
@@ -546,16 +343,18 @@ program NFS_PROGRAM {
         void NFSPROC3_NULL(void) = 0;
         */
         GETATTR3res NFSPROC3_GETATTR(GETATTR3args) = 1;
+        /*
         SETATTR3res NFSPROC3_SETATTR(SETATTR3args) = 2;
+        */
         LOOKUP3res NFSPROC3_LOOKUP(LOOKUP3args)  = 3;
         ACCESS3res NFSPROC3_ACCESS(ACCESS3args) = 4;
         /*
         READLINK3res NFSPROC3_READLINK(READLINK3args) = 5;
         */
         READ3res NFSPROC3_READ(READ3args) = 6;
+        /*
         WRITE3res NFSPROC3_WRITE(WRITE3args) = 7;
         CREATE3res NFSPROC3_CREATE(CREATE3args) = 8;
-        /*
         MKDIR3res NFSPROC3_MKDIR(MKDIR3args) = 9;
         SYMLINK3res NFSPROC3_SYMLINK(SYMLINK3args) = 10;
         MKNOD3res NFSPROC3_MKNOD(MKNOD3args) = 11;
@@ -567,8 +366,8 @@ program NFS_PROGRAM {
         READDIR3res NFSPROC3_READDIR(READDIR3args) = 16;
         /*
         READDIRPLUS3res NFSPROC3_READDIRPLUS(READDIRPLUS3args) = 17;
-        */
         FSSTAT3res NFSPROC3_FSSTAT(FSSTAT3args) = 18;
+        */
         FSINFO3res NFSPROC3_FSINFO(FSINFO3args) = 19;
         PATHCONF3res NFSPROC3_PATHCONF(PATHCONF3args) = 20;
         /*

@@ -1,89 +1,6 @@
 #include "nfs.h"
-#include "stuff.h"
+#include "tools.h"
 #include "read.h"
-#include <sys/sysmacros.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <sys/statvfs.h>
-
-
-nfstime3 timespec_to_nfstime3(const struct timespec *ts) {
-    nfstime3 result;
-    result.seconds = ts->tv_sec;
-    result.nseconds = ts->tv_nsec;
-    return result;
-}
-int fill_attributes(char *path, fattr3 *attributes) {
-    printf("looking for path: %s\n", path);
-
-    struct stat st;
-    if(stat(path, &st) == -1) {
-        printf("error finding: %s\n", path);
-        return -1;
-    }
-
-    int type = -1;
-    if(S_ISREG(st.st_mode))
-        type = 1;
-    if(S_ISDIR(st.st_mode))
-        type = 2;
-
-    attributes->type = type;
-    attributes->mode = st.st_mode;
-    attributes->nlink = st.st_nlink;
-    attributes->uid = st.st_uid;
-    attributes->gid = st.st_gid;
-    attributes->size = st.st_size;
-    attributes->used = st.st_size;
-    attributes->rdev.specdata1 = major(st.st_rdev);
-    attributes->rdev.specdata2 = minor(st.st_rdev);
-    attributes->fsid = st.st_dev;
-    attributes->fileid = st.st_ino;
-    attributes->atime = timespec_to_nfstime3(&st.st_atim);
-    attributes->mtime = timespec_to_nfstime3(&st.st_mtim);
-    attributes->ctime = timespec_to_nfstime3(&st.st_ctim);
-    return 0;
-}
-void fill_entries_for_readdir(const char *dirPath, entry3 **entries, int *eof) {
-    DIR *dir = opendir(dirPath);
-    if (dir == NULL) {
-        perror("opendir");
-        *eof = 1;
-        return;
-    }
-
-    struct dirent *dirEntry;
-    entry3 *prevEntry = NULL;
-    entry3 *firstEntry = NULL;
-
-    while ((dirEntry = readdir(dir)) != NULL) {
-        entry3 *newEntry = malloc(sizeof(entry3));
-        if (newEntry == NULL) {
-            perror("malloc");
-            *eof = 1;
-            closedir(dir);
-            return;
-        }
-
-        newEntry->fileid = dirEntry->d_ino;
-        newEntry->name = dirEntry->d_name;
-        newEntry->cookie = dirEntry->d_off;
-        newEntry->nextentry = NULL;
-
-        if (prevEntry != NULL) {
-            prevEntry->nextentry = newEntry;
-        } else {
-            firstEntry = newEntry;
-        }
-
-        prevEntry = newEntry;
-    }
-
-    closedir(dir);
-
-    *entries = firstEntry;
-    *eof = 0;
-}
 
 
 mountres3 *
@@ -177,7 +94,6 @@ nfsproc3_getattr_3_svc(GETATTR3args *argp, struct svc_req *rqstp)
 
     return &result;
 }
-#include <signal.h>
 
 ACCESS3res *
 nfsproc3_access_3_svc(ACCESS3args *argp, struct svc_req *rqstp)
@@ -214,13 +130,13 @@ nfsproc3_readdir_3_svc(READDIR3args *argp, struct svc_req *rqstp)
     fill_entries_for_readdir(path, &entries, &eof);
 
     if (eof) {
-        result.READDIR3res_u.resok.reply.eof = 0;  // TRUE
+        result.READDIR3res_u.resok.reply.eof = 0;
     } else {
-        result.READDIR3res_u.resok.reply.eof = 1;  // FALSE
+        result.READDIR3res_u.resok.reply.eof = 1;
     }
 
     result.READDIR3res_u.resok.reply.entries = entries;
-    result.READDIR3res_u.resok.dir_attributes.attributes_follow = 1;  // TRUE
+    result.READDIR3res_u.resok.dir_attributes.attributes_follow = 1;
 
     fill_attributes(path, &result.READDIR3res_u.resok.dir_attributes.post_op_attr_u.attributes);
 
@@ -243,9 +159,6 @@ nfsproc3_lookup_3_svc(LOOKUP3args *argp, struct svc_req *rqstp)
         strcat(path, "/");
     strcat(path, fileName);
 
-    //char path[MAXPATHLEN];
-    //snprintf(path, sizeof(path), "%s%s%s", dirPath, (dirPath[strlen(dirPath) - 1] != '/') ? "/" : "", fileName);
-    //snprintf(path, sizeof(path), "%s/%s", dirPath, fileName);
 
     result.LOOKUP3res_u.resok.dir_attributes.attributes_follow = 1;
     fill_attributes(dirPath, &result.LOOKUP3res_u.resok.dir_attributes.post_op_attr_u.attributes);
@@ -265,8 +178,6 @@ nfsproc3_lookup_3_svc(LOOKUP3args *argp, struct svc_req *rqstp)
     }
     return &result;
 }
-#define READ_BUFFER_SIZE 4096
-#define MAX_READ_CHUNK_SIZE (10 * 1024 * 1024)
 READ3res *
 nfsproc3_read_3_svc(READ3args *argp, struct svc_req *rqstp)
 {
@@ -281,96 +192,6 @@ nfsproc3_read_3_svc(READ3args *argp, struct svc_req *rqstp)
     size_t count = argp->count;
 
     fill_READ3res_stream(path, offset, count, &result);
-
-    //   result.status = NFS3_OK;
-
-    return &result;
-
-}
-
-CREATE3res *
-nfsproc3_create_3_svc(CREATE3args *argp, struct svc_req *rqstp)
-{
-    printf("CREATE\n");
-
-    static CREATE3res  result;
-    char *dirPath = argp->where.dir.data.data_val;
-    int len = argp->where.dir.data.data_len;
-    dirPath[len] = '\0';
-    char *fileName = argp->where.name;
-
-
-
-    char path[PATH_MAX];
-    snprintf(path, PATH_MAX, "%s/%s", dirPath, fileName);
-
-    int fd = open(path, O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (fd == -1) {
-        perror("Error opening file");
-        result.status = NFS3ERR_IO;
-    }
-
-    result.status = NFS3_OK;
-    result.CREATE3res_u.resok.obj_attributes.attributes_follow = 1;
-    fill_attributes(path, &result.CREATE3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-    result.CREATE3res_u.resok.obj.handle_follows = TRUE;
-    result.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_len = strlen(path);
-    result.CREATE3res_u.resok.obj.post_op_fh3_u.handle.data.data_val = path;
-
-    close(fd);
-
-    return &result;
-}
-
-FSSTAT3res *
-nfsproc3_fsstat_3_svc(FSSTAT3args *argp, struct svc_req *rqstp)
-{
-    printf("FSSTAT\n");
-    static FSSTAT3res  result;
-
-    char *path = argp->fsroot.data.data_val;
-    int len = argp->fsroot.data.data_len;
-    path[len] = '\0';
-
-    struct statvfs fs_stat;
-    if (statvfs(path, &fs_stat) == 0) {
-        result.status = NFS3_OK;
-        result.FSSTAT3res_u.resfail.obj_attributes.attributes_follow = 1;
-        fill_attributes(path, &result.FSSTAT3res_u.resok.obj_attributes.post_op_attr_u.attributes);
-
-        result.FSSTAT3res_u.resok.tbytes = fs_stat.f_frsize * fs_stat.f_blocks;
-        result.FSSTAT3res_u.resok.fbytes = fs_stat.f_frsize * (fs_stat.f_blocks - fs_stat.f_bfree);
-        result.FSSTAT3res_u.resok.abytes = fs_stat.f_frsize * fs_stat.f_bavail;
-        result.FSSTAT3res_u.resok.tfiles = fs_stat.f_files;
-        result.FSSTAT3res_u.resok.ffiles = fs_stat.f_files - fs_stat.f_ffree;
-        result.FSSTAT3res_u.resok.afiles = fs_stat.f_ffree;
-        result.FSSTAT3res_u.resok.invarsec = 0;
-    } else {
-        perror("Error getting file system statistics");
-        result.status = NFS3ERR_IO;
-        result.FSSTAT3res_u.resfail.obj_attributes.attributes_follow = 0;
-    }
-
-    return &result;
-}
-
-WRITE3res *
-nfsproc3_write_3_svc(WRITE3args *argp, struct svc_req *rqstp)
-{
-    printf("WRITE\n");
-
-    static WRITE3res  result;
-
-    return &result;
-}
-
-SETATTR3res *
-nfsproc3_setattr_3_svc(SETATTR3args *argp, struct svc_req *rqstp)
-{
-    printf("SETATTR\n");
-
-    static SETATTR3res  result;
-
 
     return &result;
 }

@@ -24,6 +24,5 @@ Unmount:
 make unmount
 ```
 
-
 Date and time are supported.
 

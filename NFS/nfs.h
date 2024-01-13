@@ -409,249 +409,6 @@ struct READ3res {
 };
 typedef struct READ3res READ3res;
 
-struct wcc_attr {
-	size3 size;
-	nfstime3 mtime;
-	nfstime3 ctime;
-};
-typedef struct wcc_attr wcc_attr;
-
-struct pre_op_attr {
-	bool_t attributes_follow;
-	union {
-		wcc_attr attributes;
-	} pre_op_attr_u;
-};
-typedef struct pre_op_attr pre_op_attr;
-
-struct wcc_data {
-	pre_op_attr before;
-	post_op_attr after;
-};
-typedef struct wcc_data wcc_data;
-
-enum stable_how {
-	UNSTABLE = 0,
-	DATA_SYNC = 1,
-	FILE_SYNC = 2,
-};
-typedef enum stable_how stable_how;
-
-struct WRITE3args {
-	nfs_fh3 file;
-	offset3 offset;
-	count3 count;
-	stable_how stable;
-	struct {
-		u_int data_len;
-		char *data_val;
-	} data;
-};
-typedef struct WRITE3args WRITE3args;
-
-struct WRITE3resok {
-	wcc_data file_wcc;
-	count3 count;
-	stable_how committed;
-	writeverf3 verf;
-};
-typedef struct WRITE3resok WRITE3resok;
-
-struct WRITE3resfail {
-	wcc_data file_wcc;
-};
-typedef struct WRITE3resfail WRITE3resfail;
-
-struct WRITE3res {
-	nfsstat3 status;
-	union {
-		WRITE3resok resok;
-		WRITE3resfail resfail;
-	} WRITE3res_u;
-};
-typedef struct WRITE3res WRITE3res;
-
-enum time_how {
-	DONT_CHANGE = 0,
-	SET_TO_SERVER_TIME = 1,
-	SET_TO_CLIENT_TIME = 2,
-};
-typedef enum time_how time_how;
-
-struct set_mode3 {
-	bool_t set_it;
-	union {
-		mode3 mode;
-	} set_mode3_u;
-};
-typedef struct set_mode3 set_mode3;
-
-struct set_uid3 {
-	bool_t set_it;
-	union {
-		uid3 uid;
-	} set_uid3_u;
-};
-typedef struct set_uid3 set_uid3;
-
-struct set_gid3 {
-	bool_t set_it;
-	union {
-		gid3 gid;
-	} set_gid3_u;
-};
-typedef struct set_gid3 set_gid3;
-
-struct set_size3 {
-	bool_t set_it;
-	union {
-		size3 size;
-	} set_size3_u;
-};
-typedef struct set_size3 set_size3;
-
-struct set_atime {
-	time_how set_it;
-	union {
-		nfstime3 atime;
-	} set_atime_u;
-};
-typedef struct set_atime set_atime;
-
-struct set_mtime {
-	time_how set_it;
-	union {
-		nfstime3 mtime;
-	} set_mtime_u;
-};
-typedef struct set_mtime set_mtime;
-
-struct sattr3 {
-	set_mode3 mode;
-	set_uid3 uid;
-	set_gid3 gid;
-	set_size3 size;
-	set_atime atime;
-	set_mtime mtime;
-};
-typedef struct sattr3 sattr3;
-
-struct post_op_fh3 {
-	bool_t handle_follows;
-	union {
-		nfs_fh3 handle;
-	} post_op_fh3_u;
-};
-typedef struct post_op_fh3 post_op_fh3;
-
-enum createmode3 {
-	UNCHECKED = 0,
-	GUARDED = 1,
-	EXCLUSIVE = 2,
-};
-typedef enum createmode3 createmode3;
-
-struct createhow3 {
-	createmode3 mode;
-	union {
-		sattr3 obj_attributes;
-		createverf3 verf;
-	} createhow3_u;
-};
-typedef struct createhow3 createhow3;
-
-struct CREATE3args {
-	diropargs3 where;
-	createhow3 how;
-};
-typedef struct CREATE3args CREATE3args;
-
-struct CREATE3resok {
-	post_op_fh3 obj;
-	post_op_attr obj_attributes;
-	wcc_data dir_wcc;
-};
-typedef struct CREATE3resok CREATE3resok;
-
-struct CREATE3resfail {
-	wcc_data dir_wcc;
-};
-typedef struct CREATE3resfail CREATE3resfail;
-
-struct CREATE3res {
-	nfsstat3 status;
-	union {
-		CREATE3resok resok;
-		CREATE3resfail resfail;
-	} CREATE3res_u;
-};
-typedef struct CREATE3res CREATE3res;
-
-struct FSSTAT3args {
-	nfs_fh3 fsroot;
-};
-typedef struct FSSTAT3args FSSTAT3args;
-
-struct FSSTAT3resok {
-	post_op_attr obj_attributes;
-	size3 tbytes;
-	size3 fbytes;
-	size3 abytes;
-	size3 tfiles;
-	size3 ffiles;
-	size3 afiles;
-	uint32 invarsec;
-};
-typedef struct FSSTAT3resok FSSTAT3resok;
-
-struct FSSTAT3resfail {
-	post_op_attr obj_attributes;
-};
-typedef struct FSSTAT3resfail FSSTAT3resfail;
-
-struct FSSTAT3res {
-	nfsstat3 status;
-	union {
-		FSSTAT3resok resok;
-		FSSTAT3resfail resfail;
-	} FSSTAT3res_u;
-};
-typedef struct FSSTAT3res FSSTAT3res;
-
-struct sattrguard3 {
-	bool_t check;
-	union {
-		nfstime3 obj_ctime;
-	} sattrguard3_u;
-};
-typedef struct sattrguard3 sattrguard3;
-
-struct SETATTR3args {
-	nfs_fh3 object;
-	sattr3 new_attributes;
-	sattrguard3 guard;
-};
-typedef struct SETATTR3args SETATTR3args;
-
-struct SETATTR3resok {
-	wcc_data obj_wcc;
-};
-typedef struct SETATTR3resok SETATTR3resok;
-
-struct SETATTR3resfail {
-	wcc_data obj_wcc;
-};
-typedef struct SETATTR3resfail SETATTR3resfail;
-
-struct SETATTR3res {
-	nfsstat3 status;
-	union {
-		SETATTR3resok resok;
-		SETATTR3resfail resfail;
-	} SETATTR3res_u;
-};
-typedef struct SETATTR3res SETATTR3res;
-
 #define MOUNT 100005
 #define MOUNT_VERSION 3
 
@@ -675,9 +432,6 @@ extern int mount_3_freeresult ();
 #define NFSPROC3_GETATTR 1
 extern  GETATTR3res * nfsproc3_getattr_3(GETATTR3args *, CLIENT *);
 extern  GETATTR3res * nfsproc3_getattr_3_svc(GETATTR3args *, struct svc_req *);
-#define NFSPROC3_SETATTR 2
-extern  SETATTR3res * nfsproc3_setattr_3(SETATTR3args *, CLIENT *);
-extern  SETATTR3res * nfsproc3_setattr_3_svc(SETATTR3args *, struct svc_req *);
 #define NFSPROC3_LOOKUP 3
 extern  LOOKUP3res * nfsproc3_lookup_3(LOOKUP3args *, CLIENT *);
 extern  LOOKUP3res * nfsproc3_lookup_3_svc(LOOKUP3args *, struct svc_req *);
@@ -687,18 +441,9 @@ extern  ACCESS3res * nfsproc3_access_3_svc(ACCESS3args *, struct svc_req *);
 #define NFSPROC3_READ 6
 extern  READ3res * nfsproc3_read_3(READ3args *, CLIENT *);
 extern  READ3res * nfsproc3_read_3_svc(READ3args *, struct svc_req *);
-#define NFSPROC3_WRITE 7
-extern  WRITE3res * nfsproc3_write_3(WRITE3args *, CLIENT *);
-extern  WRITE3res * nfsproc3_write_3_svc(WRITE3args *, struct svc_req *);
-#define NFSPROC3_CREATE 8
-extern  CREATE3res * nfsproc3_create_3(CREATE3args *, CLIENT *);
-extern  CREATE3res * nfsproc3_create_3_svc(CREATE3args *, struct svc_req *);
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3(READDIR3args *, CLIENT *);
 extern  READDIR3res * nfsproc3_readdir_3_svc(READDIR3args *, struct svc_req *);
-#define NFSPROC3_FSSTAT 18
-extern  FSSTAT3res * nfsproc3_fsstat_3(FSSTAT3args *, CLIENT *);
-extern  FSSTAT3res * nfsproc3_fsstat_3_svc(FSSTAT3args *, struct svc_req *);
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3(FSINFO3args *, CLIENT *);
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc(FSINFO3args *, struct svc_req *);
@@ -711,9 +456,6 @@ extern int nfs_program_3_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 #define NFSPROC3_GETATTR 1
 extern  GETATTR3res * nfsproc3_getattr_3();
 extern  GETATTR3res * nfsproc3_getattr_3_svc();
-#define NFSPROC3_SETATTR 2
-extern  SETATTR3res * nfsproc3_setattr_3();
-extern  SETATTR3res * nfsproc3_setattr_3_svc();
 #define NFSPROC3_LOOKUP 3
 extern  LOOKUP3res * nfsproc3_lookup_3();
 extern  LOOKUP3res * nfsproc3_lookup_3_svc();
@@ -723,18 +465,9 @@ extern  ACCESS3res * nfsproc3_access_3_svc();
 #define NFSPROC3_READ 6
 extern  READ3res * nfsproc3_read_3();
 extern  READ3res * nfsproc3_read_3_svc();
-#define NFSPROC3_WRITE 7
-extern  WRITE3res * nfsproc3_write_3();
-extern  WRITE3res * nfsproc3_write_3_svc();
-#define NFSPROC3_CREATE 8
-extern  CREATE3res * nfsproc3_create_3();
-extern  CREATE3res * nfsproc3_create_3_svc();
 #define NFSPROC3_READDIR 16
 extern  READDIR3res * nfsproc3_readdir_3();
 extern  READDIR3res * nfsproc3_readdir_3_svc();
-#define NFSPROC3_FSSTAT 18
-extern  FSSTAT3res * nfsproc3_fsstat_3();
-extern  FSSTAT3res * nfsproc3_fsstat_3_svc();
 #define NFSPROC3_FSINFO 19
 extern  FSINFO3res * nfsproc3_fsinfo_3();
 extern  FSINFO3res * nfsproc3_fsinfo_3_svc();
@@ -807,38 +540,6 @@ extern  bool_t xdr_READ3args (XDR *, READ3args*);
 extern  bool_t xdr_READ3resok (XDR *, READ3resok*);
 extern  bool_t xdr_READ3resfail (XDR *, READ3resfail*);
 extern  bool_t xdr_READ3res (XDR *, READ3res*);
-extern  bool_t xdr_wcc_attr (XDR *, wcc_attr*);
-extern  bool_t xdr_pre_op_attr (XDR *, pre_op_attr*);
-extern  bool_t xdr_wcc_data (XDR *, wcc_data*);
-extern  bool_t xdr_stable_how (XDR *, stable_how*);
-extern  bool_t xdr_WRITE3args (XDR *, WRITE3args*);
-extern  bool_t xdr_WRITE3resok (XDR *, WRITE3resok*);
-extern  bool_t xdr_WRITE3resfail (XDR *, WRITE3resfail*);
-extern  bool_t xdr_WRITE3res (XDR *, WRITE3res*);
-extern  bool_t xdr_time_how (XDR *, time_how*);
-extern  bool_t xdr_set_mode3 (XDR *, set_mode3*);
-extern  bool_t xdr_set_uid3 (XDR *, set_uid3*);
-extern  bool_t xdr_set_gid3 (XDR *, set_gid3*);
-extern  bool_t xdr_set_size3 (XDR *, set_size3*);
-extern  bool_t xdr_set_atime (XDR *, set_atime*);
-extern  bool_t xdr_set_mtime (XDR *, set_mtime*);
-extern  bool_t xdr_sattr3 (XDR *, sattr3*);
-extern  bool_t xdr_post_op_fh3 (XDR *, post_op_fh3*);
-extern  bool_t xdr_createmode3 (XDR *, createmode3*);
-extern  bool_t xdr_createhow3 (XDR *, createhow3*);
-extern  bool_t xdr_CREATE3args (XDR *, CREATE3args*);
-extern  bool_t xdr_CREATE3resok (XDR *, CREATE3resok*);
-extern  bool_t xdr_CREATE3resfail (XDR *, CREATE3resfail*);
-extern  bool_t xdr_CREATE3res (XDR *, CREATE3res*);
-extern  bool_t xdr_FSSTAT3args (XDR *, FSSTAT3args*);
-extern  bool_t xdr_FSSTAT3resok (XDR *, FSSTAT3resok*);
-extern  bool_t xdr_FSSTAT3resfail (XDR *, FSSTAT3resfail*);
-extern  bool_t xdr_FSSTAT3res (XDR *, FSSTAT3res*);
-extern  bool_t xdr_sattrguard3 (XDR *, sattrguard3*);
-extern  bool_t xdr_SETATTR3args (XDR *, SETATTR3args*);
-extern  bool_t xdr_SETATTR3resok (XDR *, SETATTR3resok*);
-extern  bool_t xdr_SETATTR3resfail (XDR *, SETATTR3resfail*);
-extern  bool_t xdr_SETATTR3res (XDR *, SETATTR3res*);
 
 #else /* K&R C */
 extern bool_t xdr_uint64 ();
@@ -901,38 +602,6 @@ extern bool_t xdr_READ3args ();
 extern bool_t xdr_READ3resok ();
 extern bool_t xdr_READ3resfail ();
 extern bool_t xdr_READ3res ();
-extern bool_t xdr_wcc_attr ();
-extern bool_t xdr_pre_op_attr ();
-extern bool_t xdr_wcc_data ();
-extern bool_t xdr_stable_how ();
-extern bool_t xdr_WRITE3args ();
-extern bool_t xdr_WRITE3resok ();
-extern bool_t xdr_WRITE3resfail ();
-extern bool_t xdr_WRITE3res ();
-extern bool_t xdr_time_how ();
-extern bool_t xdr_set_mode3 ();
-extern bool_t xdr_set_uid3 ();
-extern bool_t xdr_set_gid3 ();
-extern bool_t xdr_set_size3 ();
-extern bool_t xdr_set_atime ();
-extern bool_t xdr_set_mtime ();
-extern bool_t xdr_sattr3 ();
-extern bool_t xdr_post_op_fh3 ();
-extern bool_t xdr_createmode3 ();
-extern bool_t xdr_createhow3 ();
-extern bool_t xdr_CREATE3args ();
-extern bool_t xdr_CREATE3resok ();
-extern bool_t xdr_CREATE3resfail ();
-extern bool_t xdr_CREATE3res ();
-extern bool_t xdr_FSSTAT3args ();
-extern bool_t xdr_FSSTAT3resok ();
-extern bool_t xdr_FSSTAT3resfail ();
-extern bool_t xdr_FSSTAT3res ();
-extern bool_t xdr_sattrguard3 ();
-extern bool_t xdr_SETATTR3args ();
-extern bool_t xdr_SETATTR3resok ();
-extern bool_t xdr_SETATTR3resfail ();
-extern bool_t xdr_SETATTR3res ();
 
 #endif /* K&R C */
 
